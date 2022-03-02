@@ -1,0 +1,28 @@
+{
+    "schemaVersion": 1,
+    "id": "skillful",
+    "version": "${version}",
+    "name": "Skillful",
+    "description": "",
+    "authors": [],
+    "contact": {},
+    "license": "MIT",
+    "icon": "assets/skillful/icon.png",
+    "environment": "*",
+    "entrypoints": {
+        "client": [
+            "io.github.thatrobin.skillful.client.SkillfulClient"
+        ],
+        "main": [
+            "io.github.thatrobin.skillful.Skillful"
+        ]
+    },
+    "mixins": [
+        "skillful.mixins.json"
+    ],
+    "depends": {
+        "fabricloader": ">=0.13.3",
+        "fabric": "*",
+        "minecraft": "1.18.1"
+    }
+}
