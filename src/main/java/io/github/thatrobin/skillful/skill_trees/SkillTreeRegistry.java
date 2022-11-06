@@ -8,62 +8,61 @@ import java.util.Map;
 import java.util.stream.Stream;
 
 public class SkillTreeRegistry {
-    private static HashMap<Identifier, SkillTree> idToSkillTree = new HashMap<>();
+    private static HashMap<Identifier, Skill.Task> idToSkill = new HashMap<>();
 
-    public static SkillTree register(Identifier id, SkillTree skillTree) {
-        if(idToSkillTree.containsKey(id)) {
+    public static Skill.Task register(Identifier id, Skill.Task skillTree) {
+        if(idToSkill.containsKey(id)) {
             throw new IllegalArgumentException("Duplicate skill tree id tried to register: '" + id.toString() + "'");
         }
-        idToSkillTree.put(id, skillTree);
+        idToSkill.put(id, skillTree);
         return skillTree;
     }
 
-    protected static SkillTree update(Identifier id, SkillTree skillTree) {
-        if(idToSkillTree.containsKey(id)) {
-            SkillTree old = idToSkillTree.get(id);
-            idToSkillTree.remove(id);
+    protected static Skill.Task update(Identifier id, Skill.Task skillTree) {
+        if(idToSkill.containsKey(id)) {
+            Skill.Task old = idToSkill.get(id);
+            idToSkill.remove(id);
         }
         return register(id, skillTree);
     }
 
     public static int size() {
-        return idToSkillTree.size();
+        return idToSkill.size();
     }
 
     public static Stream<Identifier> identifiers() {
-        return idToSkillTree.keySet().stream();
+        return idToSkill.keySet().stream();
     }
 
-    public static Iterable<Map.Entry<Identifier, SkillTree>> entries() {
-        return idToSkillTree.entrySet();
+    public static Iterable<Map.Entry<Identifier, Skill.Task>> entries() {
+        return idToSkill.entrySet();
     }
 
     public static int getIndexOf(Identifier id){
-        return idToSkillTree.keySet().stream().toList().indexOf(id);
+        return idToSkill.keySet().stream().toList().indexOf(id);
     }
 
-    public static List<SkillTree> values() {
-        return idToSkillTree.values().stream().toList();
+    public static List<Skill.Task> values() {
+        return idToSkill.values().stream().toList();
     }
 
-    public static SkillTree get(Identifier id) {
-        if(!idToSkillTree.containsKey(id)) {
+    public static Skill.Task get(Identifier id) {
+        if(!idToSkill.containsKey(id)) {
             throw new IllegalArgumentException("Could not get skill tree from id '" + id.toString() + "', as it was not registered!");
         }
-        SkillTree skillTree = idToSkillTree.get(id);
-        return skillTree;
+        return idToSkill.get(id);
     }
 
-    public static Identifier getId(SkillTree skillTree) {
-        return skillTree.getIdentifier();
+    public static Identifier getId(Skill.Task skillTree) {
+        return idToSkill.keySet().stream().toList().get(idToSkill.values().stream().toList().indexOf(skillTree));
     }
 
     public static boolean contains(Identifier id) {
-        return idToSkillTree.containsKey(id);
+        return idToSkill.containsKey(id);
     }
 
     public static void clear() {
-        idToSkillTree.clear();
+        idToSkill.clear();
     }
 
     public static void reset() {

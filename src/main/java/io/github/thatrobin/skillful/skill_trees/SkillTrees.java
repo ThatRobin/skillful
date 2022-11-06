@@ -4,22 +4,28 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import io.github.apace100.apoli.Apoli;
 import io.github.apace100.calio.data.MultiJsonDataLoader;
 import io.github.thatrobin.skillful.Skillful;
 import net.fabricmc.fabric.api.resource.IdentifiableResourceReloadListener;
+import net.minecraft.advancement.Advancement;
+import net.minecraft.advancement.AdvancementFrame;
+import net.minecraft.advancement.AdvancementManager;
+import net.minecraft.advancement.AdvancementPositioner;
 import net.minecraft.item.ItemStack;
 import net.minecraft.resource.ResourceManager;
+import net.minecraft.server.ServerAdvancementLoader;
+import net.minecraft.text.LiteralText;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.profiler.Profiler;
 import net.minecraft.util.registry.Registry;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 public class SkillTrees extends MultiJsonDataLoader implements IdentifiableResourceReloadListener {
 
-
+    private SkillManager manager = new SkillManager();
     private static final Gson GSON = (new GsonBuilder()).setPrettyPrinting().disableHtmlEscaping().create();
 
     public SkillTrees() {
@@ -39,21 +45,30 @@ public class SkillTrees extends MultiJsonDataLoader implements IdentifiableResou
                 try {
                     JsonObject jo = je.getAsJsonObject();
                     String name = jo.get("name").getAsString();
+                    String description = jo.get("description").getAsString();
                     Identifier itemId = Identifier.tryParse(jo.get("icon").getAsString());
-                    Identifier display = Identifier.tryParse(jo.get("root").getAsString());
-                    ItemStack stack = Registry.ITEM.get(itemId).getDefaultStack();
-                    SkillTree skillTree = new SkillTree(id, name, stack);
-                    if(SkillDisplayRegistry.contains(display)) {
-                        skillTree.addChild(SkillDisplayRegistry.get(display));
-                    } else {
-                        Skillful.LOGGER.warn("Skill Display '" + display + "' did not exist in Registry");
+                    Identifier powerId = null;
+                    if(jo.has("power")) {
+                        powerId = Identifier.tryParse(jo.get("power").getAsString());
                     }
-                    SkillTreeRegistry.register(id, skillTree);
+                    Identifier parent = null;
+                    if(jo.has("parent")) {
+                        parent = Identifier.tryParse(jo.get("parent").getAsString());
+                    }
+                    ItemStack stack = Registry.ITEM.get(itemId).getDefaultStack();
+                    SkillDisplay display = new SkillDisplay(stack, id, new LiteralText(name), new LiteralText(description), null, AdvancementFrame.TASK, false, false, false);
+                    Skill.Task task = Skill.Task.create().display(display);
+                    if(parent != null) {
+                        task.parent(parent);
+                    } if (powerId != null) {
+                        task.power(powerId);
+                    }
+                    SkillTreeRegistry.register(id, task);
                 } catch (Exception e) {
                     Skillful.LOGGER.error("There was a problem reading skill tree file " + id.toString() + " (skipping): " + e.getMessage());
                 }
             }
         });
-        Skillful.LOGGER.info("Finished Loading Skill Trees. number loaded: "+ SkillTreeRegistry.size());
+        Skillful.LOGGER.info("Finished Loading Skill Trees. number loaded: " + SkillTreeRegistry.size());
     }
 }
