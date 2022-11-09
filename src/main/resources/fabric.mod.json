@@ -15,6 +15,14 @@
         ],
         "main": [
             "io.github.thatrobin.skillful.Skillful"
+        ],
+        "cardinal-components-entity": [
+            "io.github.thatrobin.skillful.Skillful"
+        ]
+    },
+    "custom": {
+        "cardinal-components": [
+            "skillful:skill_points"
         ]
     },
     "mixins": [
@@ -23,6 +31,6 @@
     "depends": {
         "fabricloader": ">=0.13.3",
         "fabric": "*",
-        "minecraft": "1.18.1"
+        "minecraft": ">=1.19.1"
     }
 }

@@ -1,40 +1,26 @@
 package io.github.thatrobin.skillful;
 
-import com.google.gson.JsonObject;
-import io.github.apace100.apoli.Apoli;
-import io.github.apace100.apoli.power.PowerTypes;
+import dev.onyxstudios.cca.api.v3.entity.EntityComponentFactoryRegistry;
+import dev.onyxstudios.cca.api.v3.entity.EntityComponentInitializer;
+import dev.onyxstudios.cca.api.v3.entity.RespawnCopyStrategy;
 import io.github.apace100.calio.util.OrderedResourceListeners;
+import io.github.thatrobin.skillful.components.SkillPointImpl;
+import io.github.thatrobin.skillful.components.SkillPointInterface;
+import io.github.thatrobin.skillful.factories.EntityActions;
 import io.github.thatrobin.skillful.networking.SkillTabS2C;
 import io.github.thatrobin.skillful.screen.SkillScreen;
 import io.github.thatrobin.skillful.skill_trees.*;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
-import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
-import net.minecraft.advancement.Advancement;
-import net.minecraft.advancement.AdvancementFrame;
-import net.minecraft.advancement.AdvancementPositioner;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.screen.advancement.AdvancementWidget;
-import net.minecraft.client.gui.screen.advancement.AdvancementsScreen;
-import net.minecraft.client.network.ClientAdvancementManager;
 import net.minecraft.client.option.KeyBinding;
-import net.minecraft.data.server.AdvancementsProvider;
-import net.minecraft.datafixer.fix.AdvancementsFix;
-import net.minecraft.item.ItemStack;
-import net.minecraft.network.packet.s2c.play.AdvancementUpdateS2CPacket;
-import net.minecraft.network.packet.s2c.play.SelectAdvancementTabS2CPacket;
-import net.minecraft.text.LiteralText;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.registry.Registry;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.glfw.GLFW;
 
-import java.util.HashMap;
-import java.util.Map;
-
-public class Skillful implements ModInitializer {
+public class Skillful implements ModInitializer, EntityComponentInitializer {
 
     public static KeyBinding key = new KeyBinding("key.skillful.open_screen", GLFW.GLFW_KEY_J, "skillful");
 
@@ -46,6 +32,7 @@ public class Skillful implements ModInitializer {
 
     @Override
     public void onInitialize() {
+        EntityActions.register();
         SkillTabS2C.register();
 
         /*
@@ -79,6 +66,14 @@ public class Skillful implements ModInitializer {
                 tick.setScreen(new SkillScreen(skillManager));
             }
         });
+    }
+
+    @Override
+    public void registerEntityComponentFactories(EntityComponentFactoryRegistry registry) {
+        registry.beginRegistration(PlayerEntity.class, SkillPointInterface.INSTANCE)
+                .impl(SkillPointImpl.class)
+                .respawnStrategy(RespawnCopyStrategy.ALWAYS_COPY)
+                .end(SkillPointImpl::new);
     }
 
     public static Identifier identifier(String path) {

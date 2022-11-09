@@ -7,19 +7,14 @@ import com.google.gson.JsonObject;
 import io.github.apace100.calio.data.MultiJsonDataLoader;
 import io.github.thatrobin.skillful.Skillful;
 import net.fabricmc.fabric.api.resource.IdentifiableResourceReloadListener;
-import net.minecraft.advancement.Advancement;
 import net.minecraft.advancement.AdvancementFrame;
-import net.minecraft.advancement.AdvancementManager;
-import net.minecraft.advancement.AdvancementPositioner;
 import net.minecraft.item.ItemStack;
 import net.minecraft.resource.ResourceManager;
-import net.minecraft.server.ServerAdvancementLoader;
-import net.minecraft.text.LiteralText;
+import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.profiler.Profiler;
 import net.minecraft.util.registry.Registry;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -55,9 +50,17 @@ public class SkillTrees extends MultiJsonDataLoader implements IdentifiableResou
                     if(jo.has("parent")) {
                         parent = Identifier.tryParse(jo.get("parent").getAsString());
                     }
+                    Identifier background = new Identifier("textures/block/stone.png");
+                    if(jo.has("background")) {
+                        background = Identifier.tryParse(jo.get("background").getAsString());
+                    }
+                    int cost = 0;
+                    if(jo.has("cost")) {
+                        cost = jo.get("cost").getAsInt();
+                    }
                     ItemStack stack = Registry.ITEM.get(itemId).getDefaultStack();
-                    SkillDisplay display = new SkillDisplay(stack, id, new LiteralText(name), new LiteralText(description), null, AdvancementFrame.TASK, false, false, false);
-                    Skill.Task task = Skill.Task.create().display(display);
+                    SkillDisplay display = new SkillDisplay(stack, id, Text.literal(name), Text.literal(description), background, AdvancementFrame.TASK, false, false, false);
+                    Skill.Task task = Skill.Task.create().display(display).cost(cost);
                     if(parent != null) {
                         task.parent(parent);
                     } if (powerId != null) {

@@ -2,31 +2,27 @@ package io.github.thatrobin.skillful.screen;
 
 import com.google.common.collect.Maps;
 import com.mojang.blaze3d.systems.RenderSystem;
-import io.github.apace100.apoli.component.PowerHolderComponent;
-import io.github.apace100.apoli.power.PowerType;
+import io.github.apace100.apoli.power.ActiveCooldownPower;
 import io.github.apace100.apoli.power.PowerTypeRegistry;
-import io.github.thatrobin.skillful.Skillful;
+import io.github.thatrobin.skillful.components.SkillPointInterface;
 import io.github.thatrobin.skillful.networking.SkillTabModPackets;
 import io.github.thatrobin.skillful.skill_trees.*;
 import io.netty.buffer.Unpooled;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.screen.advancement.AdvancementTab;
 import net.minecraft.client.gui.screen.advancement.AdvancementsScreen;
 import net.minecraft.client.render.GameRenderer;
 import net.minecraft.client.util.NarratorManager;
 import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.text.Text;
-import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Identifier;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Objects;
 
 public class SkillScreen extends Screen implements ClientSkillManager.Listener {
     private static final Identifier WINDOW_TEXTURE = new Identifier("textures/gui/advancements/window.png");
@@ -43,9 +39,9 @@ public class SkillScreen extends Screen implements ClientSkillManager.Listener {
     public static final int field_32303 = 16;
     public static final int field_32304 = 14;
     public static final int field_32305 = 7;
-    private static final Text SAD_LABEL_TEXT = new TranslatableText("skills.sad_label");
-    private static final Text EMPTY_TEXT = new TranslatableText("skills.empty");
-    private static final Text SKILLS_TEXT = new TranslatableText("gui.skills");
+    private static final Text SAD_LABEL_TEXT = Text.translatable("skills.sad_label");
+    private static final Text EMPTY_TEXT = Text.translatable("skills.empty");
+    private static final Text SKILLS_TEXT = Text.translatable("gui.skills");
     private final ClientSkillManager skillManager;
     public Map<Skill, SkillTab> tabs = Maps.newLinkedHashMap();
     @Nullable
@@ -57,7 +53,9 @@ public class SkillScreen extends Screen implements ClientSkillManager.Listener {
         this.skillManager = skillManager;
     }
 
+    @Override
     protected void init() {
+        super.init();
         this.tabs.clear();
         this.selectedTab = null;
         this.skillManager.setListener(this);
@@ -88,13 +86,22 @@ public class SkillScreen extends Screen implements ClientSkillManager.Listener {
                 break;
             }
             for (Skill advancement : this.skillManager.getManager().getAdvancements()) {
-                if(this.selectedTab != null) {
+                if (this.selectedTab != null) {
                     if (this.selectedTab.containsWidget(advancement)) {
                         SkillWidget widget = this.selectedTab.getWidget(advancement);
-                        if(widget != null) {
-                            if (!widget.isClickOnTab(i + (float)this.selectedTab.originX, j + (float)this.selectedTab.originY, mouseX, mouseY)) continue;
-                            Skillful.LOGGER.info(widget.getSkill().getId());
-                            buyWidgetPower(widget);
+                        if (widget != null) {
+                            if (!widget.isClickOnTab(i + (float) this.selectedTab.originX, j + (float) this.selectedTab.originY, mouseX, mouseY))
+                                continue;
+                            if (widget.getSkill().getParent() != null) {
+                                Identifier powerId = widget.getSkill().getParent().getPowerId();
+                                if (powerId != null) {
+                                    if (PowerTypeRegistry.contains(powerId)) {
+                                        buyWidgetPower(widget);
+                                    }
+                                }
+                            } else {
+                                buyWidgetPower(widget);
+                            }
                         }
                     }
                 }
@@ -104,7 +111,7 @@ public class SkillScreen extends Screen implements ClientSkillManager.Listener {
     }
 
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        if (this.client.options.keyAdvancements.matchesKey(keyCode, scanCode)) {
+        if (this.client.options.advancementsKey.matchesKey(keyCode, scanCode)) {
             this.client.setScreen(null);
             this.client.mouse.lockCursor();
             return true;
@@ -113,7 +120,9 @@ public class SkillScreen extends Screen implements ClientSkillManager.Listener {
         }
     }
 
+    @Override
     public void render(MatrixStack matrices, int mouseX, int mouseY, float delta) {
+        super.render(matrices, mouseX, mouseY, delta);
         int i = (this.width - 252) / 2;
         int j = (this.height - 140) / 2;
         this.renderBackground(matrices);
@@ -175,17 +184,52 @@ public class SkillScreen extends Screen implements ClientSkillManager.Listener {
             RenderSystem.disableBlend();
         }
         this.textRenderer.draw(matrices, SKILLS_TEXT, (float)(x + 8), (float)(y + 6), 0x404040);
+
+        if(MinecraftClient.getInstance().player != null) {
+            if (this.selectedTab != null) {
+                PlayerEntity player = MinecraftClient.getInstance().player;
+                SkillPointInterface skillPointInterface = SkillPointInterface.INSTANCE.get(player);
+                Integer points = skillPointInterface.getSkillPoints(this.selectedTab.getRoot().getId());
+                if (points != null) {
+                    Text SKILL_POINT_AMOUNT = Text.translatable("gui.skill_point_amount", points);
+
+                    int textWidth = this.textRenderer.getWidth(SKILL_POINT_AMOUNT);
+                    this.textRenderer.draw(matrices, SKILL_POINT_AMOUNT, (float) (x + (WINDOW_WIDTH - (textWidth + 8))), (float) (y + 6), 0x404040);
+                }
+            }
+        }
     }
 
     private void buyWidgetPower(SkillWidget skillWidget) {
+        PacketByteBuf packetByteBuf = new PacketByteBuf(Unpooled.buffer());
         Identifier powerId = skillWidget.getSkill().getPowerId();
-        if(powerId != null) {
-            if (PowerTypeRegistry.contains(powerId)) {
-                PacketByteBuf packetByteBuf = new PacketByteBuf(Unpooled.buffer());
-                packetByteBuf.writeIdentifier(powerId);
-                ClientPlayNetworking.send(SkillTabModPackets.APPLY_POWERS, packetByteBuf);
+        if(skillWidget.getSkill().getParent() != null) {
+            Identifier parentPowerId = skillWidget.getSkill().getParent().getPowerId();
+            if(parentPowerId != null) {
+                if (PowerTypeRegistry.contains(parentPowerId)) {
+                    if (powerId != null) {
+                        if (PowerTypeRegistry.contains(powerId)) {
+                            packetByteBuf.writeBoolean(true);
+                            packetByteBuf.writeIdentifier(parentPowerId);
+                            packetByteBuf.writeIdentifier(powerId);
+                        }
+                    }
+                }
+            }
+        } else {
+            if(powerId != null) {
+                if (PowerTypeRegistry.contains(powerId)) {
+                    packetByteBuf.writeBoolean(false);
+                    packetByteBuf.writeIdentifier(powerId);
+                }
             }
         }
+        packetByteBuf.writeIdentifier(skillWidget.getSkill().getId());
+        packetByteBuf.writeInt(skillWidget.getSkill().getCost());
+        if(this.selectedTab != null) {
+            packetByteBuf.writeIdentifier(this.selectedTab.getRoot().getId());
+        }
+        ClientPlayNetworking.send(SkillTabModPackets.APPLY_POWERS, packetByteBuf);
     }
 
     private void drawWidgetTooltip(MatrixStack matrices, int mouseX, int mouseY, int x, int y) {

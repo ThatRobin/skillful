@@ -1,5 +1,6 @@
 {
   "skillful.sad_label": "Sad Skill tree is sad",
   "skillful.empty": "Skill tree is empty",
-  "gui.skillful": "Skill Tree"
+  "gui.skills": "Skill Tree",
+  "gui.skill_point_amount": "Points: %s"
 }

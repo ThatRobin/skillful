@@ -10,8 +10,10 @@ import net.minecraft.client.network.ClientAdvancementManager;
 
 @Environment(EnvType.CLIENT)
 public class SkillfulClient implements ClientModInitializer {
+
     @Override
     public void onInitializeClient() {
         SkillTabC2S.register();
     }
+
 }

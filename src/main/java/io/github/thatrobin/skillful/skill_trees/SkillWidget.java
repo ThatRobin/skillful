@@ -15,6 +15,7 @@ import net.minecraft.client.gui.screen.advancement.AdvancementObtainedStatus;
 import net.minecraft.client.gui.screen.advancement.AdvancementWidget;
 import net.minecraft.client.render.GameRenderer;
 import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.text.*;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.Language;
@@ -67,8 +68,7 @@ public class SkillWidget extends DrawableHelper {
         int j = String.valueOf(i).length();
         int k = i > 1 ? client.textRenderer.getWidth("  ") + client.textRenderer.getWidth("0") * j * 2 + client.textRenderer.getWidth("/") : 0;
         int l = 29 + client.textRenderer.getWidth(this.title) + k;
-        this.description = Language.getInstance().reorder(this.wrapDescription(Texts.setStyleIfAbsent(display.getDescription().shallowCopy(), Style.EMPTY.withColor(display.getFrame().getTitleFormat())), l));
-
+        this.description = Language.getInstance().reorder(this.wrapDescription(Texts.setStyleIfAbsent(display.getDescription().copy(), Style.EMPTY.withColor(display.getFrame().getTitleFormat())), l));
         OrderedText orderedText;
         for(Iterator var9 = this.description.iterator(); var9.hasNext(); l = Math.max(l, client.textRenderer.getWidth(orderedText))) {
             orderedText = (OrderedText)var9.next();
@@ -103,6 +103,7 @@ public class SkillWidget extends DrawableHelper {
         for(int var8 = 0; var8 < var7; ++var8) {
             int i = var6[var8];
             List<StringVisitable> list2 = textHandler.wrapLines(text, width - i, Style.EMPTY);
+            list2.add(Text.literal("Cost: " + this.skill.getCost()));
             float g = Math.abs(getMaxWidth(textHandler, list2) - (float)width);
             if (g <= 10.0F) {
                 return list2;
@@ -252,7 +253,7 @@ public class SkillWidget extends DrawableHelper {
         if (bl2) {
             for(o = 0; o < this.description.size(); ++o) {
                 var21 = this.client.textRenderer;
-                var22 = (OrderedText)this.description.get(o);
+                var22 = this.description.get(o);
                 var10003 = (float)(m + 5);
                 var10004 = l + 26 - n + 7;
                 Objects.requireNonNull(this.client.textRenderer);
@@ -261,7 +262,7 @@ public class SkillWidget extends DrawableHelper {
         } else {
             for(o = 0; o < this.description.size(); ++o) {
                 var21 = this.client.textRenderer;
-                var22 = (OrderedText)this.description.get(o);
+                var22 = this.description.get(o);
                 var10003 = (float)(m + 5);
                 var10004 = originY + this.y + 9 + 17;
                 Objects.requireNonNull(this.client.textRenderer);

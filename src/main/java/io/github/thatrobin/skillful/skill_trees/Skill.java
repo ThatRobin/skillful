@@ -33,11 +33,13 @@ public class Skill {
     private final Identifier id;
     @Nullable
     private final Identifier powerId;
+    private final int cost;
     private final Set<Skill> children = Sets.newLinkedHashSet();
     private final Text text;
 
-    public Skill(Identifier id, @Nullable Skill parent, @Nullable SkillDisplay display, @Nullable Identifier powerId) {
+    public Skill(Identifier id, @Nullable Skill parent, @Nullable SkillDisplay display, @Nullable Identifier powerId, int cost) {
         this.id = id;
+        this.cost = cost;
         this.powerId = powerId;
         this.display = display;
         this.parent = parent;
@@ -46,21 +48,17 @@ public class Skill {
         }
 
         if (display == null) {
-            this.text = new LiteralText(id.toString());
+            this.text = Text.literal(id.toString());
         } else {
             Text text = display.getTitle();
             Formatting formatting = display.getFrame().getTitleFormat();
-            Text text2 = Texts.setStyleIfAbsent(text.shallowCopy(), Style.EMPTY.withColor(formatting)).append("\n").append(display.getDescription());
-            Text text3 = text.shallowCopy().styled((style) -> {
+            Text text2 = Texts.setStyleIfAbsent(text.copy(), Style.EMPTY.withColor(formatting)).append("\n").append(display.getDescription());
+            Text text3 = text.copy().styled((style) -> {
                 return style.withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, text2));
             });
             this.text = Texts.bracketed(text3).formatted(formatting);
         }
 
-    }
-
-    public Skill.Task createTask() {
-        return new Skill.Task(this.parent == null ? null : this.parent.getId(), this.display, this.powerId);
     }
 
     @Nullable
@@ -94,6 +92,10 @@ public class Skill {
         return this.powerId;
     }
 
+    public int getCost() {
+        return this.cost;
+    }
+
     public boolean equals(Object o) {
         if (this == o) {
             return true;
@@ -121,11 +123,13 @@ public class Skill {
         private Skill parentObj;
         @Nullable
         private SkillDisplay display;
+        private int cost;
 
-        Task(@Nullable Identifier parentId, @Nullable SkillDisplay display, @Nullable Identifier powerId) {
+        Task(@Nullable Identifier parentId, @Nullable SkillDisplay display, @Nullable Identifier powerId, int cost) {
             this.parentId = parentId;
             this.display = display;
             this.powerId = powerId;
+            this.cost = cost;
         }
 
         private Task() {
@@ -142,6 +146,11 @@ public class Skill {
 
         public Skill.Task parent(Identifier parentId) {
             this.parentId = parentId;
+            return this;
+        }
+
+        public Skill.Task cost(int cost) {
+            this.cost = cost;
             return this;
         }
 
@@ -181,7 +190,7 @@ public class Skill {
             })) {
                 throw new IllegalStateException("Tried to build incomplete Skill!");
             } else {
-                return new Skill(id, this.parentObj, this.display, this.powerId);
+                return new Skill(id, this.parentObj, this.display, this.powerId, this.cost);
             }
         }
 
@@ -191,35 +200,12 @@ public class Skill {
             return Skill;
         }
 
-        public JsonObject toJson() {
-            JsonObject jsonObject = new JsonObject();
-            if (this.parentObj != null) {
-                jsonObject.addProperty("parent", this.parentObj.getId().toString());
-            } else if (this.parentId != null) {
-                jsonObject.addProperty("parent", this.parentId.toString());
-            }
-
-            if (this.display != null) {
-                //jsonObject.add("display", this.display.toJson());
-            }
-
-            //jsonObject.add("rewards", this.rewards.toJson());
-            JsonObject jsonObject2 = new JsonObject();
-            //Iterator var3 = this.criteria.entrySet().iterator();
-
-            //while(var3.hasNext()) {
-            //    Map.Entry<String, SkillCriterion> entry = (Map.Entry)var3.next();
-            //    jsonObject2.add((String)entry.getKey(), ((SkillCriterion)entry.getValue()).toJson());
-            //}
-
-            jsonObject.add("criteria", jsonObject2);
-            JsonArray jsonArray = new JsonArray();
-
-            jsonObject.add("requirements", jsonArray);
-            return jsonObject;
-        }
-
         public void toPacket(PacketByteBuf buf) {
+            if (this.powerId != null) {
+                buf.writeInt(this.cost);
+            } else {
+                buf.writeInt(0);
+            }
             if (this.powerId == null) {
                 buf.writeBoolean(false);
             } else {
@@ -329,11 +315,12 @@ public class Skill {
         }
         */
         public static Skill.Task fromPacket(PacketByteBuf buf) {
+            int cost = buf.readInt();
             Identifier powerId = buf.readBoolean() ? buf.readIdentifier() : null;
             Identifier parentId = buf.readBoolean() ? buf.readIdentifier() : null;
             SkillDisplay skillDisplay = buf.readBoolean() ? SkillDisplay.fromPacket(buf) : null;
 
-            return new Skill.Task(parentId, skillDisplay, powerId);
+            return new Skill.Task(parentId, skillDisplay, powerId, cost);
         }
 
         //public Map<String, SkillCriterion> getCriteria() {
