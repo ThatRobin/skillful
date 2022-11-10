@@ -68,7 +68,7 @@ public class SkillPointImpl implements SkillPointInterface {
             for (int i = 0; i < skillPointsList.size(); i++) {
                 NbtCompound skillPointsTag = skillPointsList.getCompound(i);
                 Identifier skillTreeID = Identifier.tryParse(skillPointsTag.getString("skill_tree"));
-                int points = skillPointsTag.getInt("skill_tree");
+                int points = skillPointsTag.getInt("points");
                 this.skillPoints.put(skillTreeID, points);
             }
         }
