@@ -2,8 +2,11 @@ package io.github.thatrobin.skillful.screen;
 
 import com.google.common.collect.Maps;
 import com.mojang.blaze3d.systems.RenderSystem;
+import io.github.apace100.apoli.component.PowerHolderComponent;
 import io.github.apace100.apoli.power.ActiveCooldownPower;
+import io.github.apace100.apoli.power.PowerType;
 import io.github.apace100.apoli.power.PowerTypeRegistry;
+import io.github.thatrobin.skillful.Skillful;
 import io.github.thatrobin.skillful.components.SkillPointInterface;
 import io.github.thatrobin.skillful.networking.SkillTabModPackets;
 import io.github.thatrobin.skillful.skill_trees.*;
@@ -22,6 +25,7 @@ import net.minecraft.util.Identifier;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
 public class SkillScreen extends Screen implements ClientSkillManager.Listener {
@@ -64,7 +68,6 @@ public class SkillScreen extends Screen implements ClientSkillManager.Listener {
         } else {
             this.skillManager.selectTab(this.selectedTab == null ? null : this.selectedTab.getRoot(), true);
         }
-
     }
 
     public void removed() {
@@ -92,15 +95,17 @@ public class SkillScreen extends Screen implements ClientSkillManager.Listener {
                         if (widget != null) {
                             if (!widget.isClickOnTab(i + (float) this.selectedTab.originX, j + (float) this.selectedTab.originY, mouseX, mouseY))
                                 continue;
-                            if (widget.getSkill().getParent() != null) {
-                                Identifier powerId = widget.getSkill().getParent().getPowerId();
-                                if (powerId != null) {
-                                    if (PowerTypeRegistry.contains(powerId)) {
-                                        buyWidgetPower(widget);
+                            if(widget.getSkill().getPowerIds() != null) {
+                                if (widget.getSkill().getParent() != null) {
+                                    List<Identifier> powerIds = widget.getSkill().getParent().getPowerIds();
+                                    if (powerIds != null) {
+                                        if (powerIds.stream().allMatch(PowerTypeRegistry::contains)) {
+                                            buyWidgetPower(widget);
+                                        }
                                     }
+                                } else {
+                                    buyWidgetPower(widget);
                                 }
-                            } else {
-                                buyWidgetPower(widget);
                             }
                         }
                     }
@@ -202,25 +207,34 @@ public class SkillScreen extends Screen implements ClientSkillManager.Listener {
 
     private void buyWidgetPower(SkillWidget skillWidget) {
         PacketByteBuf packetByteBuf = new PacketByteBuf(Unpooled.buffer());
-        Identifier powerId = skillWidget.getSkill().getPowerId();
+        List<Identifier> powerIds = skillWidget.getSkill().getPowerIds();
         if(skillWidget.getSkill().getParent() != null) {
-            Identifier parentPowerId = skillWidget.getSkill().getParent().getPowerId();
-            if(parentPowerId != null) {
-                if (PowerTypeRegistry.contains(parentPowerId)) {
-                    if (powerId != null) {
-                        if (PowerTypeRegistry.contains(powerId)) {
+            List<Identifier> parentPowerIds = skillWidget.getSkill().getParent().getPowerIds();
+            if(parentPowerIds != null) {
+                if (parentPowerIds.stream().allMatch(PowerTypeRegistry::contains)) {
+                    if (powerIds != null) {
+                        if (powerIds.stream().allMatch(PowerTypeRegistry::contains)) {
                             packetByteBuf.writeBoolean(true);
-                            packetByteBuf.writeIdentifier(parentPowerId);
-                            packetByteBuf.writeIdentifier(powerId);
+                            packetByteBuf.writeInt(parentPowerIds.size());
+                            for(Identifier parentPowerId : parentPowerIds) {
+                                packetByteBuf.writeIdentifier(parentPowerId);
+                            }
+                            packetByteBuf.writeInt(powerIds.size());
+                            for(Identifier powerId : powerIds) {
+                                packetByteBuf.writeIdentifier(powerId);
+                            }
                         }
                     }
                 }
             }
         } else {
-            if(powerId != null) {
-                if (PowerTypeRegistry.contains(powerId)) {
+            if(powerIds != null) {
+                if (powerIds.stream().allMatch(PowerTypeRegistry::contains)) {
                     packetByteBuf.writeBoolean(false);
-                    packetByteBuf.writeIdentifier(powerId);
+                    packetByteBuf.writeInt(powerIds.size());
+                    for (Identifier id : powerIds) {
+                        packetByteBuf.writeIdentifier(id);
+                    }
                 }
             }
         }
@@ -283,7 +297,7 @@ public class SkillScreen extends Screen implements ClientSkillManager.Listener {
     }
 
     public void selectTab(@Nullable Skill advancement) {
-        this.selectedTab = (SkillTab)this.tabs.get(advancement);
+        this.selectedTab = this.tabs.get(advancement);
     }
 
     public void onClear() {

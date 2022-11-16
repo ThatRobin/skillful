@@ -12,6 +12,9 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayNetworkHandler;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.Identifier;
+import org.apache.commons.compress.utils.Lists;
+
+import java.util.List;
 
 public class SkillTabC2S {
 
@@ -22,23 +25,31 @@ public class SkillTabC2S {
     private static void applyPowers(MinecraftServer minecraftServer, ServerPlayerEntity playerEntity, ServerPlayNetworkHandler serverPlayNetworkHandler, PacketByteBuf packetByteBuf, PacketSender packetSender) {
         boolean hasParent = packetByteBuf.readBoolean();
         if(hasParent) {
-            Identifier parentPowerId = packetByteBuf.readIdentifier();
-            Identifier powerId = packetByteBuf.readIdentifier();
+            List<Identifier> parentPowerIds = Lists.newArrayList();
+            int parentSize = packetByteBuf.readInt();
+            for (int i = 0; i < parentSize; i++) {
+                parentPowerIds.add(packetByteBuf.readIdentifier());
+            }
+            List<Identifier> powerIds = Lists.newArrayList();
+            int powerSize = packetByteBuf.readInt();
+            for (int i = 0; i < powerSize; i++) {
+                powerIds.add(packetByteBuf.readIdentifier());
+            }
             Identifier sourceId = packetByteBuf.readIdentifier();
             int cost = packetByteBuf.readInt();
             Identifier rootId = packetByteBuf.readIdentifier();
             minecraftServer.execute(() -> {
-                if (powerId != null && parentPowerId != null && sourceId != null) {
+                if (powerIds != null && parentPowerIds != null && sourceId != null) {
                     PowerHolderComponent component = PowerHolderComponent.KEY.get(playerEntity);
-                    PowerType<?> powerType = PowerTypeRegistry.get(powerId);
-                    PowerType<?> parentPowerType = PowerTypeRegistry.get(parentPowerId);
-                    if (component.hasPower(parentPowerType) && !component.hasPower(powerType)) {
+                    if (parentPowerIds.stream().allMatch((identifier) -> component.hasPower(PowerTypeRegistry.get(identifier))) && powerIds.stream().noneMatch((identifier) -> component.hasPower(PowerTypeRegistry.get(identifier)))) {
                         SkillPointInterface skillPointInterface = SkillPointInterface.INSTANCE.get(playerEntity);
                         if(cost < skillPointInterface.getSkillPoints(rootId)) {
                             skillPointInterface.removeSkillPoints(rootId, cost);
                             skillPointInterface.sync();
                         }
-                        component.addPower(powerType, sourceId);
+                        powerIds.forEach((powerId) -> {
+                            component.addPower(PowerTypeRegistry.get(powerId), sourceId);
+                        });
                         component.sync();
                     }
                 }

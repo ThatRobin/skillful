@@ -24,13 +24,15 @@ public class ClientSkillManager {
     }
 
     public void selectTab(@Nullable Skill tab, boolean local) {
-        PacketByteBuf buf = new PacketByteBuf(Unpooled.buffer());
-        buf.writeEnumConstant(Action.OPENED_TAB);
-        buf.writeIdentifier(tab.getId());
-        if (this.selectedTab != tab) {
-            this.selectedTab = tab;
-            if (this.listener != null) {
-                this.listener.selectTab(tab);
+        if(tab != null) {
+            PacketByteBuf buf = new PacketByteBuf(Unpooled.buffer());
+            buf.writeEnumConstant(Action.OPENED_TAB);
+            buf.writeIdentifier(tab.getId());
+            if (this.selectedTab != tab) {
+                this.selectedTab = tab;
+                if (this.listener != null) {
+                    this.listener.selectTab(tab);
+                }
             }
         }
     }

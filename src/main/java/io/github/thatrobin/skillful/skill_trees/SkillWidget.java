@@ -103,7 +103,9 @@ public class SkillWidget extends DrawableHelper {
         for(int var8 = 0; var8 < var7; ++var8) {
             int i = var6[var8];
             List<StringVisitable> list2 = textHandler.wrapLines(text, width - i, Style.EMPTY);
-            list2.add(Text.literal("Cost: " + this.skill.getCost()));
+            if(!(this.skill.getCost() == 0 && this.skill.getParent() == null)) {
+                list2.add(Text.literal("Cost: " + this.skill.getCost()));
+            }
             float g = Math.abs(getMaxWidth(textHandler, list2) - (float)width);
             if (g <= 10.0F) {
                 return list2;
@@ -168,8 +170,8 @@ public class SkillWidget extends DrawableHelper {
         if (!this.display.isHidden()) {
             if (MinecraftClient.getInstance().player != null) {
                 AdvancementObtainedStatus advancementObtainedStatus;
-                Identifier powerId = this.skill.getPowerId();
-                if(PowerTypeRegistry.contains(powerId) && PowerHolderComponent.KEY.get(MinecraftClient.getInstance().player).hasPower(PowerTypeRegistry.get(powerId))) {
+                List<Identifier> powerIds = this.skill.getPowerIds();
+                if(powerIds.stream().allMatch(PowerTypeRegistry::contains) && powerIds.stream().allMatch((identifier) -> PowerHolderComponent.KEY.get(MinecraftClient.getInstance().player).hasPower(PowerTypeRegistry.get(identifier)))) {
                     advancementObtainedStatus = AdvancementObtainedStatus.OBTAINED;
                 } else {
                     advancementObtainedStatus = AdvancementObtainedStatus.UNOBTAINED;
@@ -203,7 +205,7 @@ public class SkillWidget extends DrawableHelper {
         AdvancementObtainedStatus advancementObtainedStatus2;
         AdvancementObtainedStatus advancementObtainedStatus3;
         int j = this.width;
-        if (MinecraftClient.getInstance().player != null && PowerTypeRegistry.contains(this.skill.getPowerId()) && PowerHolderComponent.KEY.get(MinecraftClient.getInstance().player).hasPower(PowerTypeRegistry.get(this.skill.getPowerId()))) {
+        if (MinecraftClient.getInstance().player != null && Objects.requireNonNull(this.skill.getPowerIds()).stream().allMatch(PowerTypeRegistry::contains) && this.skill.getPowerIds().stream().allMatch((identifier) -> PowerHolderComponent.KEY.get(MinecraftClient.getInstance().player).hasPower(PowerTypeRegistry.get(identifier)))) {
             advancementObtainedStatus = AdvancementObtainedStatus.OBTAINED;
             advancementObtainedStatus2 = AdvancementObtainedStatus.OBTAINED;
             advancementObtainedStatus3 = AdvancementObtainedStatus.OBTAINED;
