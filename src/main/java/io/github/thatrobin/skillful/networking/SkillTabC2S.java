@@ -3,7 +3,6 @@ package io.github.thatrobin.skillful.networking;
 import io.github.apace100.apoli.component.PowerHolderComponent;
 import io.github.apace100.apoli.power.PowerType;
 import io.github.apace100.apoli.power.PowerTypeRegistry;
-import io.github.thatrobin.skillful.Skillful;
 import io.github.thatrobin.skillful.components.SkillPointInterface;
 import net.fabricmc.fabric.api.networking.v1.PacketSender;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
@@ -39,7 +38,7 @@ public class SkillTabC2S {
             int cost = packetByteBuf.readInt();
             Identifier rootId = packetByteBuf.readIdentifier();
             minecraftServer.execute(() -> {
-                if (powerIds != null && parentPowerIds != null && sourceId != null) {
+                if (sourceId != null) {
                     PowerHolderComponent component = PowerHolderComponent.KEY.get(playerEntity);
                     if (parentPowerIds.stream().allMatch((identifier) -> component.hasPower(PowerTypeRegistry.get(identifier))) && powerIds.stream().noneMatch((identifier) -> component.hasPower(PowerTypeRegistry.get(identifier)))) {
                         SkillPointInterface skillPointInterface = SkillPointInterface.INSTANCE.get(playerEntity);
@@ -47,29 +46,30 @@ public class SkillTabC2S {
                             skillPointInterface.removeSkillPoints(rootId, cost);
                             skillPointInterface.sync();
                         }
-                        powerIds.forEach((powerId) -> {
-                            component.addPower(PowerTypeRegistry.get(powerId), sourceId);
-                        });
+                        powerIds.forEach((powerId) -> component.addPower(PowerTypeRegistry.get(powerId), sourceId));
                         component.sync();
                     }
                 }
             });
         } else {
-            Identifier powerId = packetByteBuf.readIdentifier();
+            List<Identifier> powerIds = Lists.newArrayList();
+            int powerSize = packetByteBuf.readInt();
+            for (int i = 0; i < powerSize; i++) {
+                powerIds.add(packetByteBuf.readIdentifier());
+            }
             Identifier sourceId = packetByteBuf.readIdentifier();
             int cost = packetByteBuf.readInt();
             Identifier rootId = packetByteBuf.readIdentifier();
             minecraftServer.execute(() -> {
-                if (powerId != null && sourceId != null) {
+                if (sourceId != null) {
                     PowerHolderComponent component = PowerHolderComponent.KEY.get(playerEntity);
-                    PowerType<?> powerType = PowerTypeRegistry.get(powerId);
-                    if(!component.hasPower(powerType)) {
+                    if (powerIds.stream().noneMatch((identifier) -> component.hasPower(PowerTypeRegistry.get(identifier)))) {
                         SkillPointInterface skillPointInterface = SkillPointInterface.INSTANCE.get(playerEntity);
                         if(cost < skillPointInterface.getSkillPoints(rootId)) {
                             skillPointInterface.removeSkillPoints(rootId, cost);
                             skillPointInterface.sync();
                         }
-                        component.addPower(powerType, sourceId);
+                        powerIds.forEach((powerId) -> component.addPower(PowerTypeRegistry.get(powerId), sourceId));
                         component.sync();
                     }
                 }

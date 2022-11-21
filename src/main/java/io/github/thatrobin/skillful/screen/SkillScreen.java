@@ -2,8 +2,6 @@ package io.github.thatrobin.skillful.screen;
 
 import com.google.common.collect.Maps;
 import com.mojang.blaze3d.systems.RenderSystem;
-import io.github.apace100.apoli.component.PowerHolderComponent;
-import io.github.apace100.apoli.power.ActiveCooldownPower;
 import io.github.apace100.apoli.power.PowerType;
 import io.github.apace100.apoli.power.PowerTypeRegistry;
 import io.github.thatrobin.skillful.Skillful;
@@ -24,7 +22,6 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -33,16 +30,6 @@ public class SkillScreen extends Screen implements ClientSkillManager.Listener {
     private static final Identifier TABS_TEXTURE = new Identifier("textures/gui/advancements/tabs.png");
     public static final int WINDOW_WIDTH = 252;
     public static final int WINDOW_HEIGHT = 140;
-    private static final int PAGE_OFFSET_X = 9;
-    private static final int PAGE_OFFSET_Y = 18;
-    public static final int PAGE_WIDTH = 234;
-    public static final int PAGE_HEIGHT = 113;
-    private static final int TITLE_OFFSET_X = 8;
-    private static final int TITLE_OFFSET_Y = 6;
-    public static final int field_32302 = 16;
-    public static final int field_32303 = 16;
-    public static final int field_32304 = 14;
-    public static final int field_32305 = 7;
     private static final Text SAD_LABEL_TEXT = Text.translatable("skills.sad_label");
     private static final Text EMPTY_TEXT = Text.translatable("skills.empty");
     private static final Text SKILLS_TEXT = Text.translatable("gui.skills");
@@ -64,19 +51,14 @@ public class SkillScreen extends Screen implements ClientSkillManager.Listener {
         this.selectedTab = null;
         this.skillManager.setListener(this);
         if (this.selectedTab == null && !this.tabs.isEmpty()) {
-            this.skillManager.selectTab((this.tabs.values().iterator().next()).getRoot(), true);
+            this.skillManager.selectTab((this.tabs.values().iterator().next()).getRoot());
         } else {
-            this.skillManager.selectTab(this.selectedTab == null ? null : this.selectedTab.getRoot(), true);
+            this.skillManager.selectTab(this.selectedTab == null ? null : this.selectedTab.getRoot());
         }
     }
 
     public void removed() {
         this.skillManager.setListener(null);
-        //ClientPlayNetworkHandler clientPlayNetworkHandler = this.client.getNetworkHandler();
-        //if (clientPlayNetworkHandler != null) {
-        //    clientPlayNetworkHandler.sendPacket(AdvancementTabC2SPacket.close());
-        //}
-
     }
 
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
@@ -85,26 +67,33 @@ public class SkillScreen extends Screen implements ClientSkillManager.Listener {
             int j = (this.height - WINDOW_HEIGHT) / 2;
             for (SkillTab skillTab : this.tabs.values()) {
                 if (!skillTab.isClickOnTab(i, j, mouseX, mouseY)) continue;
-                this.skillManager.selectTab(skillTab.getRoot(), true);
+                this.skillManager.selectTab(skillTab.getRoot());
                 break;
             }
-            for (Skill advancement : this.skillManager.getManager().getAdvancements()) {
+            for (Skill skill : this.skillManager.getManager().getSkills()) {
                 if (this.selectedTab != null) {
-                    if (this.selectedTab.containsWidget(advancement)) {
-                        SkillWidget widget = this.selectedTab.getWidget(advancement);
+                    if (this.selectedTab.containsWidget(skill)) {
+                        SkillWidget widget = this.selectedTab.getWidget(skill);
                         if (widget != null) {
                             if (!widget.isClickOnTab(i + (float) this.selectedTab.originX, j + (float) this.selectedTab.originY, mouseX, mouseY))
                                 continue;
-                            if(widget.getSkill().getPowerIds() != null) {
+                            if(widget.getSkill().getPowers() != null) {
                                 if (widget.getSkill().getParent() != null) {
-                                    List<Identifier> powerIds = widget.getSkill().getParent().getPowerIds();
-                                    if (powerIds != null) {
-                                        if (powerIds.stream().allMatch(PowerTypeRegistry::contains)) {
-                                            buyWidgetPower(widget);
+                                    List<PowerType<?>> powerTypes = widget.getSkill().getParent().getPowers();
+                                    if (powerTypes != null) {
+                                        if (powerTypes.stream().allMatch((powerType) -> PowerTypeRegistry.contains(powerType.getIdentifier()))) {
+                                            if(widget.getSkill().getCondition() == null || widget.getSkill().getCondition().test(MinecraftClient.getInstance().player)) {
+                                                buyWidgetPower(widget);
+                                            }
                                         }
                                     }
                                 } else {
-                                    buyWidgetPower(widget);
+                                    List<PowerType<?>> powerTypes = widget.getSkill().getPowers();
+                                    if (powerTypes.stream().allMatch((powerType) -> PowerTypeRegistry.contains(powerType.getIdentifier()))) {
+                                        if(widget.getSkill().getCondition() == null || widget.getSkill().getCondition().test(MinecraftClient.getInstance().player)) {
+                                            buyWidgetPower(widget);
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -116,10 +105,14 @@ public class SkillScreen extends Screen implements ClientSkillManager.Listener {
     }
 
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        if (this.client.options.advancementsKey.matchesKey(keyCode, scanCode)) {
-            this.client.setScreen(null);
-            this.client.mouse.lockCursor();
-            return true;
+        if(this.client != null) {
+            if (Skillful.key.matchesKey(keyCode, scanCode)) {
+                this.client.setScreen(null);
+                this.client.mouse.lockCursor();
+                return true;
+            } else {
+                return super.keyPressed(keyCode, scanCode, modifiers);
+            }
         } else {
             return super.keyPressed(keyCode, scanCode, modifiers);
         }
@@ -131,7 +124,7 @@ public class SkillScreen extends Screen implements ClientSkillManager.Listener {
         int i = (this.width - 252) / 2;
         int j = (this.height - 140) / 2;
         this.renderBackground(matrices);
-        this.drawAdvancementTree(matrices, mouseX, mouseY, i, j);
+        this.drawSkillTree(matrices, i, j);
         this.drawWindow(matrices, i, j);
         this.drawWidgetTooltip(matrices, mouseX, mouseY, i, j);
     }
@@ -151,9 +144,9 @@ public class SkillScreen extends Screen implements ClientSkillManager.Listener {
         }
     }
 
-    private void drawAdvancementTree(MatrixStack matrices, int mouseX, int mouseY, int x, int y) {
-        SkillTab advancementTab = this.selectedTab;
-        if (advancementTab == null) {
+    private void drawSkillTree(MatrixStack matrices, int x, int y) {
+        SkillTab skillTab = this.selectedTab;
+        if (skillTab == null) {
             AdvancementsScreen.fill(matrices, x + 9, y + 18, x + 9 + 234, y + 18 + 113, -16777216);
             int i = x + 9 + 117;
             AdvancementsScreen.drawCenteredText(matrices, this.textRenderer, EMPTY_TEXT, i, y + 18 + 56 - this.textRenderer.fontHeight / 2, -1);
@@ -164,7 +157,7 @@ public class SkillScreen extends Screen implements ClientSkillManager.Listener {
         matrixStack.push();
         matrixStack.translate(x + 9, y + 18, 0.0);
         RenderSystem.applyModelViewMatrix();
-        advancementTab.render(matrices);
+        skillTab.render(matrices);
         matrixStack.pop();
         RenderSystem.applyModelViewMatrix();
         RenderSystem.depthFunc(515);
@@ -207,33 +200,33 @@ public class SkillScreen extends Screen implements ClientSkillManager.Listener {
 
     private void buyWidgetPower(SkillWidget skillWidget) {
         PacketByteBuf packetByteBuf = new PacketByteBuf(Unpooled.buffer());
-        List<Identifier> powerIds = skillWidget.getSkill().getPowerIds();
+        List<PowerType<?>> powerTypes = skillWidget.getSkill().getPowers();
         if(skillWidget.getSkill().getParent() != null) {
-            List<Identifier> parentPowerIds = skillWidget.getSkill().getParent().getPowerIds();
-            if(parentPowerIds != null) {
-                if (parentPowerIds.stream().allMatch(PowerTypeRegistry::contains)) {
-                    if (powerIds != null) {
-                        if (powerIds.stream().allMatch(PowerTypeRegistry::contains)) {
+            List<PowerType<?>> parentPowerTypes = skillWidget.getSkill().getParent().getPowers();
+            if(parentPowerTypes != null) {
+                if (parentPowerTypes.stream().allMatch((powerType) -> PowerTypeRegistry.contains(powerType.getIdentifier()))) {
+                    if (powerTypes != null) {
+                        if (powerTypes.stream().allMatch((powerType) -> PowerTypeRegistry.contains(powerType.getIdentifier()))) {
                             packetByteBuf.writeBoolean(true);
-                            packetByteBuf.writeInt(parentPowerIds.size());
-                            for(Identifier parentPowerId : parentPowerIds) {
-                                packetByteBuf.writeIdentifier(parentPowerId);
+                            packetByteBuf.writeInt(parentPowerTypes.size());
+                            for(PowerType<?> parentPowerType : parentPowerTypes) {
+                                packetByteBuf.writeIdentifier(parentPowerType.getIdentifier());
                             }
-                            packetByteBuf.writeInt(powerIds.size());
-                            for(Identifier powerId : powerIds) {
-                                packetByteBuf.writeIdentifier(powerId);
+                            packetByteBuf.writeInt(powerTypes.size());
+                            for(PowerType<?> powerType : powerTypes) {
+                                packetByteBuf.writeIdentifier(powerType.getIdentifier());
                             }
                         }
                     }
                 }
             }
         } else {
-            if(powerIds != null) {
-                if (powerIds.stream().allMatch(PowerTypeRegistry::contains)) {
+            if(powerTypes != null) {
+                if (powerTypes.stream().allMatch((powerType) -> PowerTypeRegistry.contains(powerType.getIdentifier()))) {
                     packetByteBuf.writeBoolean(false);
-                    packetByteBuf.writeInt(powerIds.size());
-                    for (Identifier id : powerIds) {
-                        packetByteBuf.writeIdentifier(id);
+                    packetByteBuf.writeInt(powerTypes.size());
+                    for (PowerType<?> powerType : powerTypes) {
+                        packetByteBuf.writeIdentifier(powerType.getIdentifier());
                     }
                 }
             }
@@ -254,19 +247,16 @@ public class SkillScreen extends Screen implements ClientSkillManager.Listener {
             matrixStack.translate((x + 9), (y + 18), 400.0D);
             RenderSystem.applyModelViewMatrix();
             RenderSystem.enableDepthTest();
-            this.selectedTab.drawWidgetTooltip(matrices, mouseX - x - 9, mouseY - y - 18, x, y);
+            this.selectedTab.drawWidgetTooltip(matrices, mouseX - x - 9, mouseY - y - 18, x);
             RenderSystem.disableDepthTest();
             matrixStack.pop();
             RenderSystem.applyModelViewMatrix();
         }
 
         if (this.tabs.size() > 1) {
-            Iterator var8 = this.tabs.values().iterator();
-
-            while(var8.hasNext()) {
-                SkillTab advancementTab = (SkillTab)var8.next();
-                if (advancementTab.isClickOnTab(x, y, (double)mouseX, (double)mouseY)) {
-                    this.renderTooltip(matrices, advancementTab.getTitle(), mouseX, mouseY);
+            for (SkillTab skillTab : this.tabs.values()) {
+                if (skillTab.isClickOnTab(x, y, mouseX, mouseY)) {
+                    this.renderTooltip(matrices, skillTab.getTitle(), mouseX, mouseY);
                 }
             }
         }
@@ -274,9 +264,11 @@ public class SkillScreen extends Screen implements ClientSkillManager.Listener {
     }
 
     public void onRootAdded(Skill root) {
-        SkillTab advancementTab = SkillTab.create(this.client, this, this.tabs.size(), root);
-        if (advancementTab != null) {
-            this.tabs.put(root, advancementTab);
+        SkillTab skillTab = SkillTab.create(this.client, this, this.tabs.size(), root);
+        if (skillTab != null) {
+            if(skillTab.getRoot().getCondition() == null || skillTab.getRoot().getCondition().test(MinecraftClient.getInstance().player)) {
+                this.tabs.put(root, skillTab);
+            }
         }
     }
 
@@ -285,9 +277,9 @@ public class SkillScreen extends Screen implements ClientSkillManager.Listener {
     }
 
     public void onDependentAdded(Skill dependent) {
-        SkillTab advancementTab = this.getTab(dependent);
-        if (advancementTab != null) {
-            advancementTab.addSkill(dependent);
+        SkillTab skillTab = this.getTab(dependent);
+        if (skillTab != null) {
+            skillTab.addSkill(dependent);
         }
 
     }
@@ -296,8 +288,8 @@ public class SkillScreen extends Screen implements ClientSkillManager.Listener {
     public void onDependentRemoved(Skill dependent) {
     }
 
-    public void selectTab(@Nullable Skill advancement) {
-        this.selectedTab = this.tabs.get(advancement);
+    public void selectTab(@Nullable Skill skill) {
+        this.selectedTab = this.tabs.get(skill);
     }
 
     public void onClear() {
@@ -305,18 +297,18 @@ public class SkillScreen extends Screen implements ClientSkillManager.Listener {
         this.selectedTab = null;
     }
 
-    @Nullable
-    public SkillWidget getAdvancementWidget(Skill advancement) {
-        SkillTab advancementTab = this.getTab(advancement);
-        return advancementTab == null ? null : advancementTab.getWidget(advancement);
+    @SuppressWarnings("unused")
+    public SkillWidget getSkillWidget(Skill skill) {
+        SkillTab skillTab = this.getTab(skill);
+        return skillTab == null ? null : skillTab.getWidget(skill);
     }
 
     @Nullable
-    private SkillTab getTab(Skill advancement) {
-        while(advancement.getParent() != null) {
-            advancement = advancement.getParent();
+    private SkillTab getTab(Skill skill) {
+        while(skill.getParent() != null) {
+            skill = skill.getParent();
         }
 
-        return (SkillTab)this.tabs.get(advancement);
+        return this.tabs.get(skill);
     }
 }

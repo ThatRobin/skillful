@@ -3,27 +3,24 @@ package io.github.thatrobin.skillful.skill_trees;
 import io.netty.buffer.Unpooled;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.client.MinecraftClient;
 import net.minecraft.network.PacketByteBuf;
 import org.jetbrains.annotations.Nullable;
 
 public class ClientSkillManager {
-    private final MinecraftClient client;
     private final SkillManager manager = new SkillManager();
     @Nullable
     private ClientSkillManager.Listener listener;
     @Nullable
     private Skill selectedTab;
 
-    public ClientSkillManager(MinecraftClient client) {
-        this.client = client;
+    public ClientSkillManager() {
     }
 
     public SkillManager getManager() {
         return this.manager;
     }
 
-    public void selectTab(@Nullable Skill tab, boolean local) {
+    public void selectTab(@Nullable Skill tab) {
         if(tab != null) {
             PacketByteBuf buf = new PacketByteBuf(Unpooled.buffer());
             buf.writeEnumConstant(Action.OPENED_TAB);
@@ -48,14 +45,13 @@ public class ClientSkillManager {
 
     @Environment(EnvType.CLIENT)
     public interface Listener extends SkillManager.Listener {
-        void selectTab(@Nullable Skill advancement);
+        void selectTab(@Nullable Skill skill);
     }
 
-    public static enum Action {
-        OPENED_TAB,
-        CLOSED_SCREEN;
+    public enum Action {
+        OPENED_TAB;
 
-        private Action() {
+        Action() {
         }
     }
 }

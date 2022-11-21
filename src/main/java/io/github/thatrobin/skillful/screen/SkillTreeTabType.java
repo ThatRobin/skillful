@@ -21,7 +21,7 @@ enum SkillTreeTabType {
     private final int height;
     private final int tabCount;
 
-    private SkillTreeTabType(int u, int v, int width, int height, int tabCount) {
+    SkillTreeTabType(int u, int v, int width, int height, int tabCount) {
         this.u = u;
         this.v = v;
         this.width = width;
@@ -50,55 +50,42 @@ enum SkillTreeTabType {
     public void drawIcon(int x, int y, int index, ItemRenderer itemRenderer, ItemStack icon) {
         int i = x + this.getTabX(index);
         int j = y + this.getTabY(index);
-        switch(this) {
-            case ABOVE:
+        switch (this) {
+            case ABOVE -> {
                 i += 6;
                 j += 9;
-                break;
-            case BELOW:
+            }
+            case BELOW -> {
                 i += 6;
                 j += 6;
-                break;
-            case LEFT:
+            }
+            case LEFT -> {
                 i += 10;
                 j += 5;
-                break;
-            case RIGHT:
+            }
+            case RIGHT -> {
                 i += 6;
                 j += 5;
+            }
         }
 
         itemRenderer.renderInGui(icon, i, j);
     }
 
     public int getTabX(int index) {
-        switch(this) {
-            case ABOVE:
-                return (this.width + 4) * index;
-            case BELOW:
-                return (this.width + 4) * index;
-            case LEFT:
-                return -this.width + 4;
-            case RIGHT:
-                return 248;
-            default:
-                throw new UnsupportedOperationException("Don't know what this tab type is!" + this);
-        }
+        return switch (this) {
+            case ABOVE, BELOW -> (this.width + 4) * index;
+            case LEFT -> -this.width + 4;
+            case RIGHT -> 248;
+        };
     }
 
     public int getTabY(int index) {
-        switch(this) {
-            case ABOVE:
-                return -this.height + 4;
-            case BELOW:
-                return 136;
-            case LEFT:
-                return this.height * index;
-            case RIGHT:
-                return this.height * index;
-            default:
-                throw new UnsupportedOperationException("Don't know what this tab type is!" + this);
-        }
+        return switch (this) {
+            case ABOVE -> -this.height + 4;
+            case BELOW -> 136;
+            case LEFT, RIGHT -> this.height * index;
+        };
     }
 
     public boolean isClickOnTab(int screenX, int screenY, int index, double mouseX, double mouseY) {

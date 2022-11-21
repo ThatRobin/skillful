@@ -9,7 +9,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.*;
 
 public class SkillManager {
-    private final Map<Identifier, Skill> advancements = Maps.newHashMap();
+    private final Map<Identifier, Skill> skills = Maps.newHashMap();
     private final Set<Skill> roots = Sets.newLinkedHashSet();
     private final Set<Skill> dependents = Sets.newLinkedHashSet();
     @Nullable
@@ -18,34 +18,35 @@ public class SkillManager {
     public SkillManager() {
     }
 
-    private void remove(Skill advancement) {
-        for (Skill advancement2 : advancement.getChildren()) {
-            this.remove(advancement2);
+    private void remove(Skill skill) {
+        for (Skill skill2 : skill.getChildren()) {
+            this.remove(skill2);
         }
 
-        Skillful.LOGGER.info("Forgot about advancement {}", advancement.getId());
-        this.advancements.remove(advancement.getId());
-        if (advancement.getParent() == null) {
-            this.roots.remove(advancement);
+        Skillful.LOGGER.info("Forgot about skill {}", skill.getId());
+        this.skills.remove(skill.getId());
+        if (skill.getParent() == null) {
+            this.roots.remove(skill);
             if (this.listener != null) {
-                this.listener.onRootRemoved(advancement);
+                this.listener.onRootRemoved(skill);
             }
         } else {
-            this.dependents.remove(advancement);
+            this.dependents.remove(skill);
             if (this.listener != null) {
-                this.listener.onDependentRemoved(advancement);
+                this.listener.onDependentRemoved(skill);
             }
         }
 
     }
 
-    public void removeAll(Set<Identifier> advancements) {
-        for (Identifier identifier : advancements) {
-            Skill advancement = this.advancements.get(identifier);
-            if (advancement == null) {
-                Skillful.LOGGER.warn("Told to remove advancement {} but I don't know what that is", identifier);
+    @SuppressWarnings("unused")
+    public void removeAll(Set<Identifier> skills) {
+        for (Identifier identifier : skills) {
+            Skill skill = this.skills.get(identifier);
+            if (skill == null) {
+                Skillful.LOGGER.warn("Told to remove skill {} but I don't know what that is", identifier);
             } else {
-                this.remove(advancement);
+                this.remove(skill);
             }
         }
 
@@ -53,38 +54,32 @@ public class SkillManager {
 
     public void load(Map<Identifier, Skill.Task> map) {
         HashMap<Identifier, Skill.Task> map2 = Maps.newHashMap(map);
-        while (!map2.isEmpty()) {
-            boolean bl = false;
-            Iterator<Map.Entry<Identifier, Skill.Task>> iterator = map2.entrySet().iterator();
-            while (iterator.hasNext()) {
-                Map.Entry<Identifier, Skill.Task> entry = iterator.next();
+        for(Map.Entry<Identifier, Skill.Task> entry : map2.entrySet()) {
+            try {
                 Identifier identifier = entry.getKey();
                 Skill.Task task = entry.getValue();
-                if (!task.findParent(this.advancements::get)) continue;
-                Skill advancement = task.build(identifier);
-                this.advancements.put(identifier, advancement);
-                bl = true;
-                iterator.remove();
-                if (advancement.getParent() == null) {
-                    this.roots.add(advancement);
+                if (!task.findParent(this.skills::get)) continue;
+                Skill skill = task.build(identifier);
+                this.skills.put(identifier, skill);
+                if (skill.getParent() == null) {
+                    this.roots.add(skill);
                     if (this.listener == null) continue;
-                    this.listener.onRootAdded(advancement);
+                    this.listener.onRootAdded(skill);
                     continue;
                 }
-                this.dependents.add(advancement);
+                this.dependents.add(skill);
                 if (this.listener == null) continue;
-                this.listener.onDependentAdded(advancement);
-            }
-            if (bl) continue;
-            for (Map.Entry<Identifier, Skill.Task> entry : map2.entrySet()) {
-                Skillful.LOGGER.error("Couldn't load advancement {}: {}", entry.getKey(), entry.getValue());
+                this.listener.onDependentAdded(skill);
+            } catch (Exception e) {
+                Skillful.LOGGER.error("Couldn't load skill {}: {}", entry.getKey(), e.getMessage());
             }
         }
-        Skillful.LOGGER.info("Loaded {} advancements", this.advancements.size());
+        Skillful.LOGGER.info("Loaded {} skills", this.skills.size());
     }
 
+    @SuppressWarnings("unused")
     public void clear() {
-        this.advancements.clear();
+        this.skills.clear();
         this.roots.clear();
         this.dependents.clear();
         if (this.listener != null) {
@@ -96,13 +91,13 @@ public class SkillManager {
         return this.roots.stream().toList();
     }
 
-    public Collection<Skill> getAdvancements() {
-        return this.advancements.values();
+    public Collection<Skill> getSkills() {
+        return this.skills.values();
     }
 
     @Nullable
     public Skill get(Identifier id) {
-        return this.advancements.get(id);
+        return this.skills.get(id);
     }
 
     public void setListener(@Nullable SkillManager.Listener listener) {
@@ -110,17 +105,17 @@ public class SkillManager {
         if (listener != null) {
             Iterator<Skill> var2 = this.roots.iterator();
 
-            Skill advancement;
+            Skill skill;
             while(var2.hasNext()) {
-                advancement = var2.next();
-                listener.onRootAdded(advancement);
+                skill = var2.next();
+                listener.onRootAdded(skill);
             }
 
             var2 = this.dependents.iterator();
 
             while(var2.hasNext()) {
-                advancement = var2.next();
-                listener.onDependentAdded(advancement);
+                skill = var2.next();
+                listener.onDependentAdded(skill);
             }
         }
 

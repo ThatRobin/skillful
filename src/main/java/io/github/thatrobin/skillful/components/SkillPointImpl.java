@@ -1,22 +1,19 @@
 package io.github.thatrobin.skillful.components;
 
-import net.minecraft.block.entity.SculkSensorBlockEntity;
-import net.minecraft.entity.ItemEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.Identifier;
-import net.minecraft.world.event.listener.EntityGameEventHandler;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class SkillPointImpl implements SkillPointInterface {
 
-    private PlayerEntity player;
+    private final PlayerEntity player;
     private final ConcurrentHashMap<Identifier, Integer> skillPoints = new ConcurrentHashMap<>();
 
     public SkillPointImpl(PlayerEntity player) {
@@ -72,14 +69,16 @@ public class SkillPointImpl implements SkillPointInterface {
             for (int i = 0; i < skillPointsList.size(); i++) {
                 NbtCompound skillPointsTag = skillPointsList.getCompound(i);
                 Identifier skillTreeID = Identifier.tryParse(skillPointsTag.getString("skill_tree"));
-                int points = skillPointsTag.getInt("points");
-                this.skillPoints.put(skillTreeID, points);
+                if(skillTreeID != null) {
+                    int points = skillPointsTag.getInt("points");
+                    this.skillPoints.put(skillTreeID, points);
+                }
             }
         }
     }
 
     @Override
-    public void writeToNbt(NbtCompound tag) {
+    public void writeToNbt(@NotNull NbtCompound tag) {
         NbtList powerList = new NbtList();
         for(Map.Entry<Identifier, Integer> skillPointEntry : this.skillPoints.entrySet()) {
             NbtCompound powerTag = new NbtCompound();

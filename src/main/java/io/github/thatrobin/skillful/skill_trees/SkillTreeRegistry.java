@@ -8,7 +8,7 @@ import java.util.Map;
 import java.util.stream.Stream;
 
 public class SkillTreeRegistry {
-    private static HashMap<Identifier, Skill.Task> idToSkill = new HashMap<>();
+    private static final HashMap<Identifier, Skill.Task> idToSkill = new HashMap<>();
 
     public static Skill.Task register(Identifier id, Skill.Task skillTree) {
         if(idToSkill.containsKey(id)) {
@@ -18,11 +18,9 @@ public class SkillTreeRegistry {
         return skillTree;
     }
 
+    @SuppressWarnings("UnusedReturnValue")
     protected static Skill.Task update(Identifier id, Skill.Task skillTree) {
-        if(idToSkill.containsKey(id)) {
-            Skill.Task old = idToSkill.get(id);
-            idToSkill.remove(id);
-        }
+        idToSkill.remove(id);
         return register(id, skillTree);
     }
 
@@ -30,6 +28,7 @@ public class SkillTreeRegistry {
         return idToSkill.size();
     }
 
+    @SuppressWarnings("unused")
     public static Stream<Identifier> identifiers() {
         return idToSkill.keySet().stream();
     }
@@ -38,10 +37,12 @@ public class SkillTreeRegistry {
         return idToSkill.entrySet();
     }
 
+    @SuppressWarnings("unused")
     public static int getIndexOf(Identifier id){
         return idToSkill.keySet().stream().toList().indexOf(id);
     }
 
+    @SuppressWarnings("unused")
     public static List<Skill.Task> values() {
         return idToSkill.values().stream().toList();
     }
@@ -53,6 +54,7 @@ public class SkillTreeRegistry {
         return idToSkill.get(id);
     }
 
+    @SuppressWarnings("unused")
     public static Identifier getId(Skill.Task skillTree) {
         return idToSkill.keySet().stream().toList().get(idToSkill.values().stream().toList().indexOf(skillTree));
     }
@@ -65,6 +67,7 @@ public class SkillTreeRegistry {
         idToSkill.clear();
     }
 
+    @SuppressWarnings("unused")
     public static void reset() {
         clear();
     }

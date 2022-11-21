@@ -15,9 +15,8 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.MathHelper;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.Iterator;
 import java.util.Map;
+import java.util.Objects;
 
 public class SkillTab extends DrawableHelper {
     private final MinecraftClient client;
@@ -52,10 +51,12 @@ public class SkillTab extends DrawableHelper {
         this.addWidget(this.rootWidget, root);
     }
 
+    @SuppressWarnings("unused")
     public SkillTreeTabType getType() {
         return this.type;
     }
 
+    @SuppressWarnings("unused")
     public int getIndex() {
         return this.index;
     }
@@ -68,6 +69,7 @@ public class SkillTab extends DrawableHelper {
         return this.title;
     }
 
+    @SuppressWarnings("unused")
     public SkillDisplay getDisplay() {
         return this.display;
     }
@@ -82,8 +84,8 @@ public class SkillTab extends DrawableHelper {
 
     public void render(MatrixStack matrices) {
         if (!this.initialized) {
-            this.originX = (double)(117 - (this.maxPanX + this.minPanX) / 2);
-            this.originY = (double)(56 - (this.maxPanY + this.minPanY) / 2);
+            this.originX = 117 - (this.maxPanX + this.minPanX) / 2f;
+            this.originY = 56 - (this.maxPanY + this.minPanY) / 2f;
             this.initialized = true;
         }
 
@@ -99,11 +101,7 @@ public class SkillTab extends DrawableHelper {
         RenderSystem.depthFunc(515);
         Identifier identifier = this.display.getBackground();
         RenderSystem.setShader(GameRenderer::getPositionTexShader);
-        if (identifier != null) {
-            RenderSystem.setShaderTexture(0, identifier);
-        } else {
-            RenderSystem.setShaderTexture(0, TextureManager.MISSING_IDENTIFIER);
-        }
+        RenderSystem.setShaderTexture(0, Objects.requireNonNullElse(identifier, TextureManager.MISSING_IDENTIFIER));
 
         int i = MathHelper.floor(this.originX);
         int j = MathHelper.floor(this.originY);
@@ -128,7 +126,7 @@ public class SkillTab extends DrawableHelper {
         matrices.pop();
     }
 
-    public void drawWidgetTooltip(MatrixStack matrices, int mouseX, int mouseY, int x, int y) {
+    public void drawWidgetTooltip(MatrixStack matrices, int mouseX, int mouseY, int x) {
         matrices.push();
         matrices.translate(0.0D, 0.0D, -200.0D);
         fill(matrices, 0, 0, 234, 113, MathHelper.floor(this.alpha * 255.0F) << 24);
@@ -136,13 +134,10 @@ public class SkillTab extends DrawableHelper {
         int i = MathHelper.floor(this.originX);
         int j = MathHelper.floor(this.originY);
         if (mouseX > 0 && mouseX < 234 && mouseY > 0 && mouseY < 113) {
-            Iterator var9 = this.widgets.values().iterator();
-
-            while(var9.hasNext()) {
-                SkillWidget advancementWidget = (SkillWidget)var9.next();
-                if (advancementWidget.shouldRender(i, j, mouseX, mouseY)) {
+            for (SkillWidget skillWidget : this.widgets.values()) {
+                if (skillWidget.shouldRender(i, j, mouseX, mouseY)) {
                     bl = true;
-                    advancementWidget.drawTooltip(matrices, i, j, this.alpha, x, y);
+                    skillWidget.drawTooltip(matrices, i, j, x);
                     break;
                 }
             }
@@ -163,45 +158,40 @@ public class SkillTab extends DrawableHelper {
 
     @Nullable
     public static SkillTab create(MinecraftClient client, SkillScreen screen, int index, Skill root) {
-        if (root.getDisplay() == null) {
-            return null;
-        } else {
+        if (root.getDisplay() != null) {
             SkillTreeTabType[] var4 = SkillTreeTabType.values();
-            int var5 = var4.length;
-
-            for(int var6 = 0; var6 < var5; ++var6) {
-                SkillTreeTabType advancementTabType = var4[var6];
-                if (index < advancementTabType.getTabCount()) {
-                    return new SkillTab(client, screen, advancementTabType, index, root, root.getDisplay());
+            for (SkillTreeTabType skillTabType : var4) {
+                if (index < skillTabType.getTabCount()) {
+                    return new SkillTab(client, screen, skillTabType, index, root, root.getDisplay());
                 }
 
-                index -= advancementTabType.getTabCount();
+                index -= skillTabType.getTabCount();
             }
 
-            return null;
         }
+        return null;
     }
 
     public void move(double offsetX, double offsetY) {
         if (this.maxPanX - this.minPanX > 234) {
-            this.originX = MathHelper.clamp(this.originX + offsetX, (double)(-(this.maxPanX - 234)), 0.0D);
+            this.originX = MathHelper.clamp(this.originX + offsetX, -(this.maxPanX - 234), 0.0D);
         }
 
         if (this.maxPanY - this.minPanY > 113) {
-            this.originY = MathHelper.clamp(this.originY + offsetY, (double)(-(this.maxPanY - 113)), 0.0D);
+            this.originY = MathHelper.clamp(this.originY + offsetY, -(this.maxPanY - 113), 0.0D);
         }
 
     }
 
-    public void addSkill(Skill advancement) {
-        if (advancement.getDisplay() != null) {
-            SkillWidget advancementWidget = new SkillWidget(this, this.client, advancement, advancement.getDisplay());
-            this.addWidget(advancementWidget, advancement);
+    public void addSkill(Skill skill) {
+        if (skill.getDisplay() != null) {
+            SkillWidget advancementWidget = new SkillWidget(this, this.client, skill, skill.getDisplay());
+            this.addWidget(advancementWidget, skill);
         }
     }
 
-    private void addWidget(SkillWidget widget, Skill advancement) {
-        this.widgets.put(advancement, widget);
+    private void addWidget(SkillWidget widget, Skill skill) {
+        this.widgets.put(skill, widget);
         int i = widget.getX();
         int j = i + 28;
         int k = widget.getY();
@@ -210,22 +200,19 @@ public class SkillTab extends DrawableHelper {
         this.maxPanX = Math.max(this.maxPanX, j);
         this.minPanY = Math.min(this.minPanY, k);
         this.maxPanY = Math.max(this.maxPanY, l);
-        Iterator var7 = this.widgets.values().iterator();
-
-        while(var7.hasNext()) {
-            SkillWidget advancementWidget = (SkillWidget)var7.next();
-            advancementWidget.addToTree();
+        for (SkillWidget skillWidget : this.widgets.values()) {
+            skillWidget.addToTree();
         }
 
     }
 
     @Nullable
-    public SkillWidget getWidget(Skill advancement) {
-        return this.widgets.get(advancement);
+    public SkillWidget getWidget(Skill skill) {
+        return this.widgets.get(skill);
     }
 
-    public boolean containsWidget(Skill advancement) {
-        return this.widgets.containsKey(advancement);
+    public boolean containsWidget(Skill skill) {
+        return this.widgets.containsKey(skill);
     }
 
     public SkillScreen getScreen() {

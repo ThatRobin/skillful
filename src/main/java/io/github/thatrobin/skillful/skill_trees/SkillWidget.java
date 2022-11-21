@@ -4,44 +4,23 @@ import com.google.common.collect.Lists;
 import com.mojang.blaze3d.systems.RenderSystem;
 import io.github.apace100.apoli.component.PowerHolderComponent;
 import io.github.apace100.apoli.power.PowerType;
-import io.github.apace100.apoli.power.PowerTypeRegistry;
 import io.github.thatrobin.skillful.Skillful;
-import net.minecraft.advancement.Advancement;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextHandler;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawableHelper;
-import net.minecraft.client.gui.screen.advancement.AdvancementObtainedStatus;
-import net.minecraft.client.gui.screen.advancement.AdvancementWidget;
 import net.minecraft.client.render.GameRenderer;
 import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.text.*;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.Language;
 import net.minecraft.util.math.MathHelper;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Comparator;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Objects;
-import java.util.stream.Stream;
+import java.util.*;
 
 public class SkillWidget extends DrawableHelper {
-    private static final Identifier WIDGETS_TEXTURE = new Identifier("textures/gui/advancements/widgets.png");
-    private static final int field_32286 = 26;
-    private static final int field_32287 = 0;
-    private static final int field_32288 = 200;
-    private static final int field_32289 = 26;
-    private static final int ICON_OFFSET_X = 8;
-    private static final int ICON_OFFSET_Y = 5;
-    private static final int ICON_SIZE = 26;
-    private static final int field_32293 = 3;
-    private static final int field_32294 = 5;
-    private static final int TITLE_OFFSET_X = 32;
-    private static final int TITLE_OFFSET_Y = 9;
-    private static final int TITLE_MAX_WIDTH = 163;
+    private static final Identifier WIDGETS_TEXTURE = Skillful.identifier("textures/gui/skills/widgets.png");
     private static final int[] SPLIT_OFFSET_CANDIDATES = new int[]{0, 10, -10, 25, -25};
     private final SkillTab tab;
     private final Skill skill;
@@ -64,14 +43,12 @@ public class SkillWidget extends DrawableHelper {
         this.title = Language.getInstance().reorder(client.textRenderer.trimToWidth(display.getTitle(), 163));
         this.x = MathHelper.floor(display.getX() * 28.0F);
         this.y = MathHelper.floor(display.getY() * 27.0F);
-        int i = 0;
-        int j = String.valueOf(i).length();
-        int k = i > 1 ? client.textRenderer.getWidth("  ") + client.textRenderer.getWidth("0") * j * 2 + client.textRenderer.getWidth("/") : 0;
+        int k = 0;
         int l = 29 + client.textRenderer.getWidth(this.title) + k;
         this.description = Language.getInstance().reorder(this.wrapDescription(Texts.setStyleIfAbsent(display.getDescription().copy(), Style.EMPTY.withColor(display.getFrame().getTitleFormat())), l));
         OrderedText orderedText;
-        for(Iterator var9 = this.description.iterator(); var9.hasNext(); l = Math.max(l, client.textRenderer.getWidth(orderedText))) {
-            orderedText = (OrderedText)var9.next();
+        for(Iterator<OrderedText> var9 = this.description.iterator(); var9.hasNext(); l = Math.max(l, client.textRenderer.getWidth(orderedText))) {
+            orderedText = var9.next();
         }
 
         this.width = l + 3 + 5;
@@ -88,25 +65,25 @@ public class SkillWidget extends DrawableHelper {
     }
 
     private static float getMaxWidth(TextHandler textHandler, List<StringVisitable> lines) {
-        StringVisitable longest = lines.stream().max(Comparator.comparingInt((test) -> test.getString().length())).get();
-        Objects.requireNonNull(textHandler);
-        return textHandler.getWidth(longest);
+        Optional<StringVisitable> longestO = lines.stream().max(Comparator.comparingInt((test) -> test.getString().length()));
+        if(longestO.isPresent()) {
+            StringVisitable longest = longestO.get();
+            Objects.requireNonNull(textHandler);
+            return textHandler.getWidth(longest);
+        }
+        return 0;
     }
 
     private List<StringVisitable> wrapDescription(Text text, int width) {
         TextHandler textHandler = this.client.textRenderer.getTextHandler();
         List<StringVisitable> list = null;
         float f = 3.4028235E38F;
-        int[] var6 = SPLIT_OFFSET_CANDIDATES;
-        int var7 = var6.length;
-
-        for(int var8 = 0; var8 < var7; ++var8) {
-            int i = var6[var8];
+        for (int i : SPLIT_OFFSET_CANDIDATES) {
             List<StringVisitable> list2 = textHandler.wrapLines(text, width - i, Style.EMPTY);
-            if(!(this.skill.getCost() == 0 && this.skill.getParent() == null)) {
+            if (!(this.skill.getCost() == 0 && this.skill.getParent() == null)) {
                 list2.add(Text.literal("Cost: " + this.skill.getCost()));
             }
-            float g = Math.abs(getMaxWidth(textHandler, list2) - (float)width);
+            float g = Math.abs(getMaxWidth(textHandler, list2) - (float) width);
             if (g <= 10.0F) {
                 return list2;
             }
@@ -157,28 +134,28 @@ public class SkillWidget extends DrawableHelper {
             }
         }
 
-        Iterator var11 = this.children.iterator();
-
-        while(var11.hasNext()) {
-            SkillWidget skillWidget = (SkillWidget)var11.next();
+        for (SkillWidget skillWidget : this.children) {
             skillWidget.renderLines(matrices, x, y, border);
         }
-
     }
 
     public void renderWidgets(MatrixStack matrices, int x, int y) {
         if (!this.display.isHidden()) {
             if (MinecraftClient.getInstance().player != null) {
-                AdvancementObtainedStatus advancementObtainedStatus;
-                List<Identifier> powerIds = this.skill.getPowerIds();
-                if(powerIds.stream().allMatch(PowerTypeRegistry::contains) && powerIds.stream().allMatch((identifier) -> PowerHolderComponent.KEY.get(MinecraftClient.getInstance().player).hasPower(PowerTypeRegistry.get(identifier)))) {
-                    advancementObtainedStatus = AdvancementObtainedStatus.OBTAINED;
-                } else {
-                    advancementObtainedStatus = AdvancementObtainedStatus.UNOBTAINED;
+                SkillObtainedStatus skillObtainedStatus = SkillObtainedStatus.LOCKED;
+                List<PowerType<?>> powerTypes = this.skill.getPowers();
+                PowerHolderComponent component = PowerHolderComponent.KEY.get(MinecraftClient.getInstance().player);
+                if (this.skill.getParent() != null && this.skill.getParent().getPowers() != null && (this.skill.getParent() == null || this.skill.getParent().getPowers().stream().allMatch(component::hasPower) && (this.skill.getCondition() == null || this.skill.getCondition().test(MinecraftClient.getInstance().player)))) {
+                    skillObtainedStatus = SkillObtainedStatus.UNOBTAINED;
+                }
+                if (powerTypes != null) {
+                    if(powerTypes.stream().allMatch(component::hasPower)) {
+                        skillObtainedStatus = SkillObtainedStatus.OBTAINED;
+                    }
                 }
                 RenderSystem.setShader(GameRenderer::getPositionTexShader);
                 RenderSystem.setShaderTexture(0, WIDGETS_TEXTURE);
-                this.drawTexture(matrices, x + this.x + 3, y + this.y, this.display.getFrame().getTextureV(), 128 + advancementObtainedStatus.getSpriteIndex() * 26, 26, 26);
+                this.drawTexture(matrices, x + this.x + 3, y + this.y, this.display.getFrame().getTextureV(), 128 + skillObtainedStatus.getSpriteIndex() * 26, 26, 26);
                 this.client.getItemRenderer().renderInGui(this.display.getIcon(), x + this.x + 8, y + this.y + 5);
             }
         }
@@ -187,6 +164,7 @@ public class SkillWidget extends DrawableHelper {
         }
     }
 
+    @SuppressWarnings("unused")
     public int getWidth() {
         return this.width;
     }
@@ -195,27 +173,26 @@ public class SkillWidget extends DrawableHelper {
         this.children.add(widget);
     }
 
-    public void drawTooltip(MatrixStack matrices, int originX, int originY, float alpha, int x, int y) {
+    @SuppressWarnings("ConstantConditions")
+    public void drawTooltip(MatrixStack matrices, int originX, int originY, int x) {
         boolean bl = x + originX + this.x + this.width + 26 >= this.tab.getScreen().width;
-        int var10000 = 113 - originY - this.y - 26;
-        int var10002 = this.description.size();
-        Objects.requireNonNull(this.client.textRenderer);
-        boolean bl2 = var10000 <= 6 + var10002 * 9;
-        AdvancementObtainedStatus advancementObtainedStatus;
-        AdvancementObtainedStatus advancementObtainedStatus2;
-        AdvancementObtainedStatus advancementObtainedStatus3;
-        int j = this.width;
-        if (MinecraftClient.getInstance().player != null && Objects.requireNonNull(this.skill.getPowerIds()).stream().allMatch(PowerTypeRegistry::contains) && this.skill.getPowerIds().stream().allMatch((identifier) -> PowerHolderComponent.KEY.get(MinecraftClient.getInstance().player).hasPower(PowerTypeRegistry.get(identifier)))) {
-            advancementObtainedStatus = AdvancementObtainedStatus.OBTAINED;
-            advancementObtainedStatus2 = AdvancementObtainedStatus.OBTAINED;
-            advancementObtainedStatus3 = AdvancementObtainedStatus.OBTAINED;
-        } else {
-            advancementObtainedStatus = AdvancementObtainedStatus.UNOBTAINED;
-            advancementObtainedStatus2 = AdvancementObtainedStatus.UNOBTAINED;
-            advancementObtainedStatus3 = AdvancementObtainedStatus.UNOBTAINED;
+        boolean bl2 = 113 - originY - this.y - 26 <= 6 + this.description.size() * this.client.textRenderer.fontHeight;
+        SkillObtainedStatus skillObtainedStatus = SkillObtainedStatus.LOCKED;
+        float f = 1.0f;
+        int j = MathHelper.floor(f * (float)this.width);
+        if(f >= 1.0f) {
+            j = this.width / 2;
         }
-
-        int k = 0;
+        PowerHolderComponent component = PowerHolderComponent.KEY.get(MinecraftClient.getInstance().player);
+        if((this.skill.getParent() == null || this.skill.getParent().getPowers().stream().allMatch(component::hasPower)) && (this.skill.getCondition() == null ||this.skill.getCondition().test(MinecraftClient.getInstance().player))) {
+            skillObtainedStatus = SkillObtainedStatus.UNOBTAINED;
+        }
+        if(this.skill.getPowers() != null) {
+            if (MinecraftClient.getInstance().player != null && this.skill.getPowers().stream().allMatch(component::hasPower)) {
+                skillObtainedStatus = SkillObtainedStatus.OBTAINED;
+            }
+        }
+        int k = this.width - j;
         RenderSystem.setShader(GameRenderer::getPositionTexShader);
         RenderSystem.setShaderTexture(0, WIDGETS_TEXTURE);
         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
@@ -233,14 +210,14 @@ public class SkillWidget extends DrawableHelper {
         int n = 32 + var10001 * 9;
         if (!this.description.isEmpty()) {
             if (bl2) {
-                this.renderDescriptionBackground(matrices, m, l + 26 - n, this.width, n, 10, 200, 26, 0, 52);
+                this.renderDescriptionBackground(matrices, m, l + 26 - n, this.width, n);
             } else {
-                this.renderDescriptionBackground(matrices, m, l, this.width, n, 10, 200, 26, 0, 52);
+                this.renderDescriptionBackground(matrices, m, l, this.width, n);
             }
         }
-        this.drawTexture(matrices, m, l, 0, advancementObtainedStatus.getSpriteIndex() * 26, j, 26);
-        this.drawTexture(matrices, m + j, l, 200 - k, advancementObtainedStatus2.getSpriteIndex() * 26, k, 26);
-        this.drawTexture(matrices, originX + this.x + 3, originY + this.y, this.display.getFrame().getTextureV(), 128 + advancementObtainedStatus3.getSpriteIndex() * 26, 26, 26);
+        this.drawTexture(matrices, m, l, 0, skillObtainedStatus.getSpriteIndex() * 26, j, 26);
+        this.drawTexture(matrices, m + j, l, 200 - k, skillObtainedStatus.getSpriteIndex() * 26, k, 26);
+        this.drawTexture(matrices, originX + this.x + 3, originY + this.y, this.display.getFrame().getTextureV(), 128 + skillObtainedStatus.getSpriteIndex() * 26, 26, 26);
         if (bl) {
             this.client.textRenderer.drawWithShadow(matrices, this.title, (float)(m + 5), (float)(originY + this.y + 9), -1);
         } else {
@@ -275,16 +252,16 @@ public class SkillWidget extends DrawableHelper {
         this.client.getItemRenderer().renderInGui(this.display.getIcon(), originX + this.x + 8, originY + this.y + 5);
     }
 
-    protected void renderDescriptionBackground(MatrixStack matrices, int x, int y, int width, int height, int cornerSize, int textureWidth, int textureHeight, int u, int v) {
-        this.drawTexture(matrices, x, y, u, v, cornerSize, cornerSize);
-        this.drawTextureRepeatedly(matrices, x + cornerSize, y, width - cornerSize - cornerSize, cornerSize, u + cornerSize, v, textureWidth - cornerSize - cornerSize, textureHeight);
-        this.drawTexture(matrices, x + width - cornerSize, y, u + textureWidth - cornerSize, v, cornerSize, cornerSize);
-        this.drawTexture(matrices, x, y + height - cornerSize, u, v + textureHeight - cornerSize, cornerSize, cornerSize);
-        this.drawTextureRepeatedly(matrices, x + cornerSize, y + height - cornerSize, width - cornerSize - cornerSize, cornerSize, u + cornerSize, v + textureHeight - cornerSize, textureWidth - cornerSize - cornerSize, textureHeight);
-        this.drawTexture(matrices, x + width - cornerSize, y + height - cornerSize, u + textureWidth - cornerSize, v + textureHeight - cornerSize, cornerSize, cornerSize);
-        this.drawTextureRepeatedly(matrices, x, y + cornerSize, cornerSize, height - cornerSize - cornerSize, u, v + cornerSize, textureWidth, textureHeight - cornerSize - cornerSize);
-        this.drawTextureRepeatedly(matrices, x + cornerSize, y + cornerSize, width - cornerSize - cornerSize, height - cornerSize - cornerSize, u + cornerSize, v + cornerSize, textureWidth - cornerSize - cornerSize, textureHeight - cornerSize - cornerSize);
-        this.drawTextureRepeatedly(matrices, x + width - cornerSize, y + cornerSize, cornerSize, height - cornerSize - cornerSize, u + textureWidth - cornerSize, v + cornerSize, textureWidth, textureHeight - cornerSize - cornerSize);
+    protected void renderDescriptionBackground(MatrixStack matrices, int x, int y, int width, int height) {
+        this.drawTexture(matrices, x, y, 0, 52, 10, 10);
+        this.drawTextureRepeatedly(matrices, x + 10, y, width - 10 - 10, 10, 10, 52, 200 - 10 - 10, 26);
+        this.drawTexture(matrices, x + width - 10, y, 200 - 10, 52, 10, 10);
+        this.drawTexture(matrices, x, y + height - 10, 0, 52 + 26 - 10, 10, 10);
+        this.drawTextureRepeatedly(matrices, x + 10, y + height - 10, width - 10 - 10, 10, 10, 52 + 26 - 10, 200 - 10 - 10, 26);
+        this.drawTexture(matrices, x + width - 10, y + height - 10, 200 - 10, 52 + 26 - 10, 10, 10);
+        this.drawTextureRepeatedly(matrices, x, y + 10, 10, height - 10 - 10, 0, 52 + 10, 200, 26 - 10 - 10);
+        this.drawTextureRepeatedly(matrices, x + 10, y + 10, width - 10 - 10, height - 10 - 10, 10, 52 + 10, 200 - 10 - 10, 26 - 10 - 10);
+        this.drawTextureRepeatedly(matrices, x + width - 10, y + 10, 10, height - 10 - 10, 200 - 10, 52 + 10, 200, 26 - 10 - 10);
     }
 
     protected void drawTextureRepeatedly(MatrixStack matrices, int x, int y, int width, int height, int u, int v, int textureWidth, int textureHeight) {

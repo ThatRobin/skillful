@@ -12,6 +12,7 @@ public interface SkillPointInterface extends AutoSyncedComponent {
     ComponentKey<SkillPointInterface> INSTANCE = ComponentRegistry.getOrCreate(Skillful.identifier("skill_points"), SkillPointInterface.class);
 
     Integer getSkillPoints(Identifier skillTree);
+    @SuppressWarnings("unused")
     void setSkillPoints(Identifier skillTree, Integer points);
     void addSkillPoints(Identifier skillTree, Integer points);
     void removeSkillPoints(Identifier skillTree, Integer points);

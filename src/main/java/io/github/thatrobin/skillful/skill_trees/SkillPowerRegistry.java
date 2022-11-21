@@ -17,14 +17,13 @@ public class SkillPowerRegistry {
         return power;
     }
 
-    protected static PowerType<?> update(Identifier id, PowerType<?> skillTree) {
-        if(idToUP.containsKey(id)) {
-            PowerType<?> old = idToUP.get(id);
-            idToUP.remove(id);
-        }
+    @SuppressWarnings("UnusedReturnValue")
+    public static PowerType<?> update(Identifier id, PowerType<?> skillTree) {
+        idToUP.remove(id);
         return register(id, skillTree);
     }
 
+    @SuppressWarnings("unused")
     public static int size() {
         return idToUP.size();
     }
@@ -48,6 +47,7 @@ public class SkillPowerRegistry {
         idToUP.clear();
     }
 
+    @SuppressWarnings("unused")
     public static void reset() {
         clear();
     }

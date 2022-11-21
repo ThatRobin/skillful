@@ -63,7 +63,7 @@ public class SkillPositioner {
             skillPositioner = skillPositioner2.onFinishCalculation(skillPositioner == null ? skillPositioner2 : skillPositioner);
         }
         this.onFinishChildrenCalculation();
-        float f = (this.children.get((int)0).row + this.children.get((int)(this.children.size() - 1)).row) / 2.0f;
+        float f = (this.children.get(0).row + this.children.get(this.children.size() - 1).row) / 2.0f;
         if (this.previousSibling != null) {
             this.row = this.previousSibling.row + 1.0f;
             this.relativeRowInSiblings = this.row - f;
@@ -131,37 +131,41 @@ public class SkillPositioner {
         SkillPositioner skillPositioner = this;
         SkillPositioner skillPositioner2 = this;
         SkillPositioner skillPositioner3 = this.previousSibling;
-        SkillPositioner skillPositioner4 = this.parent.children.get(0);
-        float f = this.relativeRowInSiblings;
-        float g = this.relativeRowInSiblings;
-        float h = skillPositioner3.relativeRowInSiblings;
-        float i = skillPositioner4.relativeRowInSiblings;
-        while (skillPositioner3.getLastChild() != null && skillPositioner.getFirstChild() != null) {
-            skillPositioner3 = skillPositioner3.getLastChild();
-            skillPositioner = skillPositioner.getFirstChild();
-            skillPositioner4 = skillPositioner4.getFirstChild();
-            skillPositioner2 = skillPositioner2.getLastChild();
-            skillPositioner2.optionalLast = this;
-            float j = skillPositioner3.row + h - (skillPositioner.row + f) + 1.0f;
-            if (j > 0.0f) {
-                skillPositioner3.getLast(this, last).pushDown(this, j);
-                f += j;
-                g += j;
+        if(this.parent != null) {
+            SkillPositioner skillPositioner4 = this.parent.children.get(0);
+            float f = this.relativeRowInSiblings;
+            float g = this.relativeRowInSiblings;
+            float h = skillPositioner3.relativeRowInSiblings;
+            float i = skillPositioner4.relativeRowInSiblings;
+            while (skillPositioner3.getLastChild() != null && skillPositioner.getFirstChild() != null) {
+                skillPositioner3 = skillPositioner3.getLastChild();
+                skillPositioner = skillPositioner.getFirstChild();
+                skillPositioner4 = skillPositioner4.getFirstChild();
+                skillPositioner2 = skillPositioner2.getLastChild();
+                assert skillPositioner2 != null;
+                skillPositioner2.optionalLast = this;
+                float j = skillPositioner3.row + h - (skillPositioner.row + f) + 1.0f;
+                if (j > 0.0f) {
+                    skillPositioner3.getLast(this, last).pushDown(this, j);
+                    f += j;
+                    g += j;
+                }
+                h += skillPositioner3.relativeRowInSiblings;
+                f += skillPositioner.relativeRowInSiblings;
+                assert skillPositioner4 != null;
+                i += skillPositioner4.relativeRowInSiblings;
+                g += skillPositioner2.relativeRowInSiblings;
             }
-            h += skillPositioner3.relativeRowInSiblings;
-            f += skillPositioner.relativeRowInSiblings;
-            i += skillPositioner4.relativeRowInSiblings;
-            g += skillPositioner2.relativeRowInSiblings;
-        }
-        if (skillPositioner3.getLastChild() != null && skillPositioner2.getLastChild() == null) {
-            skillPositioner2.substituteChild = skillPositioner3.getLastChild();
-            skillPositioner2.relativeRowInSiblings += h - g;
-        } else {
-            if (skillPositioner.getFirstChild() != null && skillPositioner4.getFirstChild() == null) {
-                skillPositioner4.substituteChild = skillPositioner.getFirstChild();
-                skillPositioner4.relativeRowInSiblings += f - i;
+            if (skillPositioner3.getLastChild() != null && skillPositioner2.getLastChild() == null) {
+                skillPositioner2.substituteChild = skillPositioner3.getLastChild();
+                skillPositioner2.relativeRowInSiblings += h - g;
+            } else {
+                if (skillPositioner.getFirstChild() != null && skillPositioner4.getFirstChild() == null) {
+                    skillPositioner4.substituteChild = skillPositioner.getFirstChild();
+                    skillPositioner4.relativeRowInSiblings += f - i;
+                }
+                last = this;
             }
-            last = this;
         }
         return last;
     }
@@ -178,8 +182,10 @@ public class SkillPositioner {
     }
 
     private SkillPositioner getLast(SkillPositioner skillPositioner, SkillPositioner skillPositioner2) {
-        if (this.optionalLast != null && skillPositioner.parent.children.contains(this.optionalLast)) {
-            return this.optionalLast;
+        if(skillPositioner.parent != null) {
+            if (this.optionalLast != null && skillPositioner.parent.children.contains(this.optionalLast)) {
+                return this.optionalLast;
+            }
         }
         return skillPositioner2;
     }

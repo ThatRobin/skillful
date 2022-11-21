@@ -20,14 +20,12 @@ public class SkillTabS2C {
 
     @Environment(EnvType.CLIENT)
     public static void register() {
-        ClientPlayConnectionEvents.INIT.register(((clientPlayNetworkHandler, minecraftClient) -> {
-            ClientPlayNetworking.registerReceiver(SkillTabModPackets.SKILL_DATA, SkillTabS2C::recieveSkillData);
-        }));
+        ClientPlayConnectionEvents.INIT.register(((clientPlayNetworkHandler, minecraftClient) -> ClientPlayNetworking.registerReceiver(SkillTabModPackets.SKILL_DATA, SkillTabS2C::recieveSkillData)));
     }
 
     @Environment(EnvType.CLIENT)
     private static void recieveSkillData(MinecraftClient minecraftClient, ClientPlayNetworkHandler clientPlayNetworkHandler, PacketByteBuf packetByteBuf, PacketSender packetSender) {
-        Skillful.skillManager = new ClientSkillManager(minecraftClient);
+        Skillful.skillManager = new ClientSkillManager();
         Map<Identifier, Skill.Task> map = packetByteBuf.readMap(PacketByteBuf::readIdentifier, Skill.Task::fromPacket);
         Skillful.skillManager.getManager().load(map);
 
