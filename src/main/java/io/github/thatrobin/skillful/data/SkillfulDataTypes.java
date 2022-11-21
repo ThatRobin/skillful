@@ -12,14 +12,19 @@ import io.github.thatrobin.skillful.skill_trees.Skill;
 import io.github.thatrobin.skillful.skill_trees.SkillDisplay;
 import io.github.thatrobin.skillful.skill_trees.SkillPowerRegistry;
 import io.github.thatrobin.skillful.skill_trees.SkillTreeRegistry;
+import io.github.thatrobin.skillful.utils.KeybindingData;
 import net.minecraft.advancement.AdvancementFrame;
+import net.minecraft.client.option.KeyBinding;
+import net.minecraft.client.util.InputUtil;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import org.apache.commons.compress.utils.Lists;
+import org.lwjgl.glfw.GLFW;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class SkillfulDataTypes {
 
@@ -119,6 +124,21 @@ public class SkillfulDataTypes {
                 data.set("condition", skillTask.getCondition());
                 data.set("parent", skillTask.getParent());
                 data.set("cost", skillTask.getCost());
+                return data;
+            }));
+
+    public static final SerializableDataType<KeybindingData> KEYBINDING = SerializableDataType.compound(KeybindingData.class,
+            new SerializableData()
+                    .add("key", SerializableDataTypes.STRING)
+                    .add("category", SerializableDataTypes.STRING),
+            (data) ->  {
+                InputUtil.Key key = InputUtil.Type.KEYSYM.map.values().stream().filter((akey -> akey.getTranslationKey().equals(data.get("key")))).toList().get(0);
+                return new KeybindingData(new KeyBinding(key.getTranslationKey(), InputUtil.Type.KEYSYM, key.getCode(), data.get("category")));
+            },
+            ((serializableData, keyBinding) -> {
+                SerializableData.Instance data = serializableData.new Instance();
+                data.set("key", keyBinding.getTranslationKey());
+                data.set("category", keyBinding.getCategory());
                 return data;
             }));
 

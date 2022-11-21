@@ -3,8 +3,10 @@
     "id": "skillful",
     "version": "${version}",
     "name": "Skillful",
-    "description": "",
-    "authors": [],
+    "description": "Skillful is a mod that adds data driven skill trees to minecraft!",
+    "authors": [
+        "ThatRobin"
+    ],
     "contact": {},
     "license": "MIT",
     "icon": "assets/skillful/icon.png",
@@ -28,6 +30,7 @@
     "mixins": [
         "skillful.mixins.json"
     ],
+    "accessWidener": "skillful.accesswidener",
     "depends": {
         "fabricloader": ">=0.13.3",
         "fabric": "*",

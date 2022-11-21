@@ -7,6 +7,9 @@
         "PlayerManagerMixin"
     ],
     "client": [
+        "ApoliClientAccessorMixin",
+        "InputUtilTypeAccessorMixin",
+        "KeyBindingRegistryImplAccessorMixin"
     ],
     "injectors": {
         "defaultRequire": 1

@@ -145,7 +145,7 @@ public class SkillWidget extends DrawableHelper {
                 SkillObtainedStatus skillObtainedStatus = SkillObtainedStatus.LOCKED;
                 List<PowerType<?>> powerTypes = this.skill.getPowers();
                 PowerHolderComponent component = PowerHolderComponent.KEY.get(MinecraftClient.getInstance().player);
-                if (this.skill.getParent() != null && this.skill.getParent().getPowers() != null && (this.skill.getParent() == null || this.skill.getParent().getPowers().stream().allMatch(component::hasPower) && (this.skill.getCondition() == null || this.skill.getCondition().test(MinecraftClient.getInstance().player)))) {
+                if ((this.skill.getParent() == null || this.skill.getParent().getPowers().stream().allMatch(component::hasPower) && (this.skill.getCondition() == null || this.skill.getCondition().test(MinecraftClient.getInstance().player)))) {
                     skillObtainedStatus = SkillObtainedStatus.UNOBTAINED;
                 }
                 if (powerTypes != null) {

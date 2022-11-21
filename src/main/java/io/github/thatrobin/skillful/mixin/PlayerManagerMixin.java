@@ -6,8 +6,11 @@ import io.github.thatrobin.skillful.networking.SkillTabModPackets;
 import io.github.thatrobin.skillful.skill_trees.Skill;
 import io.github.thatrobin.skillful.skill_trees.SkillPowerRegistry;
 import io.github.thatrobin.skillful.skill_trees.SkillTreeRegistry;
+import io.github.thatrobin.skillful.utils.KeybindRegistry;
+import io.github.thatrobin.skillful.utils.KeybindingData;
 import io.netty.buffer.Unpooled;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
+import net.minecraft.client.option.KeyBinding;
 import net.minecraft.network.ClientConnection;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.server.PlayerManager;
@@ -31,6 +34,18 @@ public class PlayerManagerMixin {
         SkillTreeRegistry.entries().forEach(identifierTaskEntry -> map.put(identifierTaskEntry.getKey(), identifierTaskEntry.getValue()));
         skillData.writeMap(map, PacketByteBuf::writeIdentifier, ((packetByteBuf, task) -> task.toPacket(packetByteBuf)));
         ServerPlayNetworking.send(player, SkillTabModPackets.SKILL_DATA, skillData);
+
+        PacketByteBuf keybindData = new PacketByteBuf(Unpooled.buffer());
+        keybindData.writeInt(KeybindRegistry.size());
+        KeybindRegistry.entries().forEach((bindingEntry) -> {
+            Identifier identifier = bindingEntry.getKey();
+            KeyBinding key = bindingEntry.getValue();
+            KeybindingData data = new KeybindingData(key);
+            keybindData.writeString(identifier.toString());
+            data.toBuffer(keybindData, identifier);
+        });
+
+        ServerPlayNetworking.send(player, SkillTabModPackets.SEND_KEYBINDS, keybindData);
 
         PowerHolderComponent component = PowerHolderComponent.KEY.get(player);
         SkillPowerRegistry.entries().forEach(identifierPowerTypeEntry -> {
