@@ -23,6 +23,7 @@ import net.minecraft.util.Identifier;
 import org.apache.commons.compress.utils.Lists;
 import org.lwjgl.glfw.GLFW;
 
+import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -34,36 +35,39 @@ public class SkillfulDataTypes {
                     .add("description", SerializableDataTypes.TEXT)
                     .add("icon", SerializableDataTypes.ITEM_STACK, Items.GRASS_BLOCK.getDefaultStack())
                     .add("power", ApoliDataTypes.POWER_TYPE, null)
-                    .add("powers", SkillfulDataTypes.POWER_TYPES, null)
+                    .add("powers", SerializableDataTypes.IDENTIFIERS, null)
                     .add("parent", SerializableDataTypes.IDENTIFIER, null)
-                    .add("default_powers", SerializableDataTypes.IDENTIFIERS, Lists.newArrayList())
+                    .add("default_powers", SerializableDataTypes.IDENTIFIERS, null)
                     .add("background", SerializableDataTypes.IDENTIFIER, new Identifier("textures/block/stone.png"))
                     .add("condition", ApoliDataTypes.ENTITY_CONDITION, null)
                     .add("cost", SerializableDataTypes.INT, 0),
             (data) ->  {
                 Text name = data.get("name");
                 Text description = data.get("description");
-                List<PowerType<?>> powerTypes = Lists.newArrayList();
+                List<Identifier> powerTypes = new LinkedList<>();
                 Identifier parent = null;
                 ItemStack icon = data.get("icon");
+                List<Identifier> defaultPowers = new LinkedList<>();
                 if(data.isPresent("power")) {
                     powerTypes.add(data.get("power"));
                 }
                 if(data.isPresent("powers")) {
-                    List<PowerType<?>> powerTypesList = data.get("powers");
+                    List<Identifier> powerTypesList = data.get("powers");
                     powerTypes.addAll(powerTypesList);
                 }
                 if(data.isPresent("parent")) {
                     parent = data.get("parent");
                 }
-                List<Identifier> defaultPowers = data.get("default_powers");
+                if(data.isPresent("default_powers")) {
+                    defaultPowers = data.get("default_powers");
+                }
                 for (Identifier defaultPower : defaultPowers) {
                     if(SkillPowerRegistry.contains(defaultPower)) {
                         SkillPowerRegistry.update(defaultPower, PowerTypeRegistry.get(defaultPower));
                     } else {
                         SkillPowerRegistry.register(defaultPower, PowerTypeRegistry.get(defaultPower));
                     }
-                    powerTypes.add(PowerTypeRegistry.get(defaultPower));
+                    powerTypes.add(defaultPower);
                 }
                 Identifier background = data.get("background");
                 int cost = data.getInt("cost");
@@ -131,13 +135,10 @@ public class SkillfulDataTypes {
             new SerializableData()
                     .add("key", SerializableDataTypes.STRING)
                     .add("category", SerializableDataTypes.STRING),
-            (data) ->  {
-                InputUtil.Key key = InputUtil.Type.KEYSYM.map.values().stream().filter((akey -> akey.getTranslationKey().equals(data.get("key")))).toList().get(0);
-                return new KeybindingData(new KeyBinding(key.getTranslationKey(), InputUtil.Type.KEYSYM, key.getCode(), data.get("category")));
-            },
+            (data) -> new KeybindingData(data.get("key"), data.get("key"), data.get("category")),
             ((serializableData, keyBinding) -> {
                 SerializableData.Instance data = serializableData.new Instance();
-                data.set("key", keyBinding.getTranslationKey());
+                data.set("key", keyBinding.getKeyKey());
                 data.set("category", keyBinding.getCategory());
                 return data;
             }));

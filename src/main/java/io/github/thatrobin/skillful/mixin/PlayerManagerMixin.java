@@ -24,11 +24,11 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import java.util.HashMap;
 import java.util.Map;
 
-@Mixin(PlayerManager.class)
+@Mixin(value = PlayerManager.class, priority = 1001)
 public class PlayerManagerMixin {
 
     @Inject(at = @At("TAIL"), method = "onPlayerConnect(Lnet/minecraft/network/ClientConnection;Lnet/minecraft/server/network/ServerPlayerEntity;)V")
-    private void setTabs(ClientConnection connection, ServerPlayerEntity player, CallbackInfo info) {
+    private void onConnect(ClientConnection connection, ServerPlayerEntity player, CallbackInfo info) {
         PacketByteBuf skillData = new PacketByteBuf(Unpooled.buffer());
         Map<Identifier, Skill.Task> map = new HashMap<>();
         SkillTreeRegistry.entries().forEach(identifierTaskEntry -> map.put(identifierTaskEntry.getKey(), identifierTaskEntry.getValue()));
@@ -39,8 +39,7 @@ public class PlayerManagerMixin {
         keybindData.writeInt(KeybindRegistry.size());
         KeybindRegistry.entries().forEach((bindingEntry) -> {
             Identifier identifier = bindingEntry.getKey();
-            KeyBinding key = bindingEntry.getValue();
-            KeybindingData data = new KeybindingData(key);
+            KeybindingData data = bindingEntry.getValue();
             keybindData.writeString(identifier.toString());
             data.toBuffer(keybindData, identifier);
         });

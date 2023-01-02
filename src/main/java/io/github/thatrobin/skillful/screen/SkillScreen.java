@@ -5,6 +5,7 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import io.github.apace100.apoli.power.PowerType;
 import io.github.apace100.apoli.power.PowerTypeRegistry;
 import io.github.thatrobin.skillful.Skillful;
+import io.github.thatrobin.skillful.client.SkillfulClient;
 import io.github.thatrobin.skillful.components.SkillPointInterface;
 import io.github.thatrobin.skillful.networking.SkillTabModPackets;
 import io.github.thatrobin.skillful.skill_trees.*;
@@ -79,17 +80,17 @@ public class SkillScreen extends Screen implements ClientSkillManager.Listener {
                                 continue;
                             if(widget.getSkill().getPowers() != null) {
                                 if (widget.getSkill().getParent() != null) {
-                                    List<PowerType<?>> powerTypes = widget.getSkill().getParent().getPowers();
+                                    List<Identifier> powerTypes = widget.getSkill().getParent().getPowers();
                                     if (powerTypes != null) {
-                                        if (powerTypes.stream().allMatch((powerType) -> PowerTypeRegistry.contains(powerType.getIdentifier()))) {
+                                        if (powerTypes.stream().allMatch((powerType) -> PowerTypeRegistry.contains(powerType))) {
                                             if(widget.getSkill().getCondition() == null || widget.getSkill().getCondition().test(MinecraftClient.getInstance().player)) {
                                                 buyWidgetPower(widget);
                                             }
                                         }
                                     }
                                 } else {
-                                    List<PowerType<?>> powerTypes = widget.getSkill().getPowers();
-                                    if (powerTypes.stream().allMatch((powerType) -> PowerTypeRegistry.contains(powerType.getIdentifier()))) {
+                                    List<Identifier> powerTypes = widget.getSkill().getPowers();
+                                    if (powerTypes.stream().allMatch((powerType) -> PowerTypeRegistry.contains(powerType))) {
                                         if(widget.getSkill().getCondition() == null || widget.getSkill().getCondition().test(MinecraftClient.getInstance().player)) {
                                             buyWidgetPower(widget);
                                         }
@@ -106,7 +107,7 @@ public class SkillScreen extends Screen implements ClientSkillManager.Listener {
 
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
         if(this.client != null) {
-            if (Skillful.key.matchesKey(keyCode, scanCode)) {
+            if (SkillfulClient.key.matchesKey(keyCode, scanCode)) {
                 this.client.setScreen(null);
                 this.client.mouse.lockCursor();
                 return true;
@@ -200,21 +201,21 @@ public class SkillScreen extends Screen implements ClientSkillManager.Listener {
 
     private void buyWidgetPower(SkillWidget skillWidget) {
         PacketByteBuf packetByteBuf = new PacketByteBuf(Unpooled.buffer());
-        List<PowerType<?>> powerTypes = skillWidget.getSkill().getPowers();
+        List<Identifier> powerTypes = skillWidget.getSkill().getPowers();
         if(skillWidget.getSkill().getParent() != null) {
-            List<PowerType<?>> parentPowerTypes = skillWidget.getSkill().getParent().getPowers();
+            List<Identifier> parentPowerTypes = skillWidget.getSkill().getParent().getPowers();
             if(parentPowerTypes != null) {
-                if (parentPowerTypes.stream().allMatch((powerType) -> PowerTypeRegistry.contains(powerType.getIdentifier()))) {
+                if (parentPowerTypes.stream().allMatch((powerType) -> PowerTypeRegistry.contains(powerType))) {
                     if (powerTypes != null) {
-                        if (powerTypes.stream().allMatch((powerType) -> PowerTypeRegistry.contains(powerType.getIdentifier()))) {
+                        if (powerTypes.stream().allMatch((powerType) -> PowerTypeRegistry.contains(powerType))) {
                             packetByteBuf.writeBoolean(true);
                             packetByteBuf.writeInt(parentPowerTypes.size());
-                            for(PowerType<?> parentPowerType : parentPowerTypes) {
-                                packetByteBuf.writeIdentifier(parentPowerType.getIdentifier());
+                            for(Identifier parentPowerType : parentPowerTypes) {
+                                packetByteBuf.writeIdentifier(parentPowerType);
                             }
                             packetByteBuf.writeInt(powerTypes.size());
-                            for(PowerType<?> powerType : powerTypes) {
-                                packetByteBuf.writeIdentifier(powerType.getIdentifier());
+                            for(Identifier powerType : powerTypes) {
+                                packetByteBuf.writeIdentifier(powerType);
                             }
                         }
                     }
@@ -222,11 +223,11 @@ public class SkillScreen extends Screen implements ClientSkillManager.Listener {
             }
         } else {
             if(powerTypes != null) {
-                if (powerTypes.stream().allMatch((powerType) -> PowerTypeRegistry.contains(powerType.getIdentifier()))) {
+                if (powerTypes.stream().allMatch((powerType) -> PowerTypeRegistry.contains(powerType))) {
                     packetByteBuf.writeBoolean(false);
                     packetByteBuf.writeInt(powerTypes.size());
-                    for (PowerType<?> powerType : powerTypes) {
-                        packetByteBuf.writeIdentifier(powerType.getIdentifier());
+                    for (Identifier powerType : powerTypes) {
+                        packetByteBuf.writeIdentifier(powerType);
                     }
                 }
             }

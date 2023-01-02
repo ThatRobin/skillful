@@ -5,9 +5,11 @@ import dev.onyxstudios.cca.api.v3.entity.EntityComponentInitializer;
 import dev.onyxstudios.cca.api.v3.entity.RespawnCopyStrategy;
 import io.github.apace100.apoli.component.PowerHolderComponent;
 import io.github.apace100.apoli.power.PowerType;
+import io.github.apace100.apoli.power.PowerTypeRegistry;
 import io.github.thatrobin.skillful.components.SkillPointImpl;
 import io.github.thatrobin.skillful.components.SkillPointInterface;
 import io.github.thatrobin.skillful.factories.EntityActions;
+import io.github.thatrobin.skillful.networking.SkillTabC2S;
 import io.github.thatrobin.skillful.networking.SkillTabModPackets;
 import io.github.thatrobin.skillful.networking.SkillTabS2C;
 import io.github.thatrobin.skillful.screen.SkillScreen;
@@ -18,8 +20,11 @@ import io.netty.buffer.Unpooled;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
+import net.fabricmc.fabric.api.client.networking.v1.ClientLoginConnectionEvents;
+import net.fabricmc.fabric.api.client.networking.v1.ClientLoginNetworking;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerWorldEvents;
+import net.fabricmc.fabric.api.networking.v1.ServerLoginNetworking;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
 import net.minecraft.client.option.KeyBinding;
@@ -37,34 +42,27 @@ import java.util.Map;
 
 public class Skillful implements ModInitializer, EntityComponentInitializer {
 
-    public static KeyBinding key = new KeyBinding("key.skillful.open_screen", GLFW.GLFW_KEY_J, "skillful");
-
     public static String MODID = "skillful";
 
     public static final Logger LOGGER = LogManager.getLogger(Skillful.class);
 
-    public static ClientSkillManager skillManager;
+    public static ClientSkillManager skillManager = new ClientSkillManager();
 
     @Override
     public void onInitialize() {
         PowerSkillManager.initializeSkillData();
         EntityActions.register();
-        SkillTabS2C.register();
+        SkillTabC2S.register();
         ResourceManagerHelper.get(ResourceType.SERVER_DATA).registerReloadListener(new SkillTrees());
         ResourceManagerHelper.get(ResourceType.SERVER_DATA).registerReloadListener(new KeybindManager());
-
-        KeyBindingHelper.registerKeyBinding(key);
-        ClientTickEvents.START_CLIENT_TICK.register(tick -> {
-            while(key.wasPressed()) {
-                tick.setScreen(new SkillScreen(skillManager));
-            }
-        });
 
         ServerWorldEvents.UNLOAD.register(((server, world) -> {
             Skillful.clearRegistries();
             KeybindRegistry.clear();
         }));
+
         ServerLifecycleEvents.START_DATA_PACK_RELOAD.register(((server, resourceManager) -> Skillful.clearRegistries()));
+
 
         ServerLifecycleEvents.END_DATA_PACK_RELOAD.register(((server, resourceManager, success) -> {
             for (ServerPlayerEntity serverPlayerEntity : server.getPlayerManager().getPlayerList()) {

@@ -4,6 +4,7 @@ import com.google.common.collect.Lists;
 import com.mojang.blaze3d.systems.RenderSystem;
 import io.github.apace100.apoli.component.PowerHolderComponent;
 import io.github.apace100.apoli.power.PowerType;
+import io.github.apace100.apoli.power.PowerTypeRegistry;
 import io.github.thatrobin.skillful.Skillful;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextHandler;
@@ -143,13 +144,13 @@ public class SkillWidget extends DrawableHelper {
         if (!this.display.isHidden()) {
             if (MinecraftClient.getInstance().player != null) {
                 SkillObtainedStatus skillObtainedStatus = SkillObtainedStatus.LOCKED;
-                List<PowerType<?>> powerTypes = this.skill.getPowers();
+                List<Identifier> powerTypes = this.skill.getPowers();
                 PowerHolderComponent component = PowerHolderComponent.KEY.get(MinecraftClient.getInstance().player);
-                if ((this.skill.getParent() == null || this.skill.getParent().getPowers().stream().allMatch(component::hasPower) && (this.skill.getCondition() == null || this.skill.getCondition().test(MinecraftClient.getInstance().player)))) {
+                if ((this.skill.getParent() == null || this.skill.getParent().getPowers().stream().allMatch((id) -> component.hasPower(PowerTypeRegistry.get(id))) && (this.skill.getCondition() == null || this.skill.getCondition().test(MinecraftClient.getInstance().player)))) {
                     skillObtainedStatus = SkillObtainedStatus.UNOBTAINED;
                 }
                 if (powerTypes != null) {
-                    if(powerTypes.stream().allMatch(component::hasPower)) {
+                    if(powerTypes.stream().allMatch((id) -> component.hasPower(PowerTypeRegistry.get(id)))) {
                         skillObtainedStatus = SkillObtainedStatus.OBTAINED;
                     }
                 }
@@ -184,11 +185,11 @@ public class SkillWidget extends DrawableHelper {
             j = this.width / 2;
         }
         PowerHolderComponent component = PowerHolderComponent.KEY.get(MinecraftClient.getInstance().player);
-        if((this.skill.getParent() == null || this.skill.getParent().getPowers().stream().allMatch(component::hasPower)) && (this.skill.getCondition() == null ||this.skill.getCondition().test(MinecraftClient.getInstance().player))) {
+        if((this.skill.getParent() == null || this.skill.getParent().getPowers().stream().allMatch((id) -> component.hasPower(PowerTypeRegistry.get(id)))) && (this.skill.getCondition() == null ||this.skill.getCondition().test(MinecraftClient.getInstance().player))) {
             skillObtainedStatus = SkillObtainedStatus.UNOBTAINED;
         }
         if(this.skill.getPowers() != null) {
-            if (MinecraftClient.getInstance().player != null && this.skill.getPowers().stream().allMatch(component::hasPower)) {
+            if (MinecraftClient.getInstance().player != null && this.skill.getPowers().stream().allMatch((id) -> component.hasPower(PowerTypeRegistry.get(id)))) {
                 skillObtainedStatus = SkillObtainedStatus.OBTAINED;
             }
         }

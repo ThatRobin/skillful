@@ -9,7 +9,7 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 
 import java.util.List;
 
-@Mixin(value = InputUtil.Type.class, remap = false)
+@Mixin(value = InputUtil.Type.class)
 public interface InputUtilTypeAccessorMixin {
 
     @Accessor("map")

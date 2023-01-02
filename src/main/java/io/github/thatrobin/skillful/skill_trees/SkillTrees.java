@@ -4,17 +4,14 @@ import com.google.gson.*;
 import io.github.apace100.calio.data.MultiJsonDataLoader;
 import io.github.thatrobin.skillful.Skillful;
 import io.github.thatrobin.skillful.data.SkillfulDataTypes;
-import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents;
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.resource.IdentifiableResourceReloadListener;
 import net.minecraft.resource.ResourceManager;
-import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.ServerAdvancementLoader;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.profiler.Profiler;
 import org.apache.commons.compress.utils.Lists;
 
 import java.util.Collection;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
@@ -64,7 +61,7 @@ public class SkillTrees extends MultiJsonDataLoader implements IdentifiableResou
 
     @Override
     public Collection<Identifier> getFabricDependencies() {
-        List<Identifier> requirements = Lists.newArrayList();
+        List<Identifier> requirements = new LinkedList<>();
         requirements.add(new Identifier("apoli", "powers"));
         return requirements;
     }

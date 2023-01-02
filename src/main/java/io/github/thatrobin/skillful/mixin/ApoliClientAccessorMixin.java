@@ -10,13 +10,13 @@ import java.util.HashMap;
 @Mixin(value = ApoliClient.class, remap = false)
 public interface ApoliClientAccessorMixin {
 
-    static @Accessor
-    HashMap<String, KeyBinding> getIdToKeyBindingMap() {
+    @Accessor
+    static HashMap<String, KeyBinding> getIdToKeyBindingMap() {
         throw new AssertionError();
     }
 
-    static @Accessor
-    void setIdToKeyBindingMap(HashMap<String, KeyBinding> map) {
+    @Accessor
+    static void setIdToKeyBindingMap(HashMap<String, KeyBinding> map) {
         throw new AssertionError();
     }
 }

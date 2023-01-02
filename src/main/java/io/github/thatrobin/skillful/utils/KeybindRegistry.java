@@ -1,30 +1,43 @@
 package io.github.thatrobin.skillful.utils;
 
 import io.github.apace100.apoli.ApoliClient;
+import io.github.thatrobin.skillful.Skillful;
 import io.github.thatrobin.skillful.mixin.ApoliClientAccessorMixin;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.option.KeyBinding;
+import net.minecraft.client.util.InputUtil;
 import net.minecraft.util.Identifier;
 import org.apache.commons.compress.utils.Lists;
 
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
 public class KeybindRegistry {
 
-    private static final HashMap<Identifier, KeyBinding> idToUP = new HashMap<>();
-    private static final List<Identifier> idList = Lists.newArrayList();
+    private static final HashMap<Identifier, KeybindingData> idToUP = new HashMap<>();
+    private static final List<Identifier> idList = new LinkedList<>();
 
-    public static KeyBinding register(Identifier id, KeyBinding binding) {
+    public static KeybindingData registerServer(Identifier id, KeybindingData binding) {
         if (idToUP.containsKey(id)) {
             throw new IllegalArgumentException("Duplicate universal power id tried to register: '" + id.toString() + "'");
         }
         idToUP.put(id, binding);
-        KeyBindingHelper.registerKeyBinding(binding);
-        ApoliClient.registerPowerKeybinding(binding.getTranslationKey(), binding);
         return binding;
+    }
+
+    public static KeyBinding registerClient(Identifier id, KeybindingData binding) {
+        if (idToUP.containsKey(id)) {
+            throw new IllegalArgumentException("Duplicate universal power id tried to register: '" + id.toString() + "'");
+        }
+        idToUP.put(id, binding);
+        InputUtil.Key key = InputUtil.Type.KEYSYM.map.values().stream().filter((akey -> akey.getTranslationKey().equals(binding.getKeyKey()))).toList().get(0);
+        KeyBinding keyBinding = new KeyBinding(binding.getTranslationKey(), InputUtil.Type.KEYSYM, key.getCode(), binding.getCategory());
+        KeyBindingHelper.registerKeyBinding(keyBinding);
+        ApoliClient.registerPowerKeybinding(binding.getTranslationKey(), keyBinding);
+        return keyBinding;
     }
 
     public static List<Identifier> getList() {
@@ -35,11 +48,11 @@ public class KeybindRegistry {
         return idToUP.size();
     }
 
-    public static Iterable<Map.Entry<Identifier, KeyBinding>> entries() {
+    public static Iterable<Map.Entry<Identifier, KeybindingData>> entries() {
         return idToUP.entrySet();
     }
 
-    public static KeyBinding get(Identifier id) {
+    public static KeybindingData get(Identifier id) {
         if(!idToUP.containsKey(id)) {
             throw new IllegalArgumentException("Could not get power from id '" + id.toString() + "', as it was not registered!");
         }
@@ -57,7 +70,13 @@ public class KeybindRegistry {
         }));
         ApoliClientAccessorMixin.setIdToKeyBindingMap(map);
 
-        MinecraftClient.getInstance().options.allKeys = KeyBindingRegistryImplExtention.removeAndProcess(MinecraftClient.getInstance().options.allKeys, idToUP.values().toArray(new KeyBinding[]{}));
+        List<KeyBinding> keybinds = new LinkedList<>();
+        for (KeybindingData value : idToUP.values()) {
+            InputUtil.Key key = InputUtil.Type.KEYSYM.map.values().stream().filter((akey -> akey.getTranslationKey().equals(value.getKeyKey()))).toList().get(0);
+            keybinds.add(new KeyBinding(value.getTranslationKey(), InputUtil.Type.KEYSYM, key.getCode(), value.getCategory()));
+        }
+
+        MinecraftClient.getInstance().options.allKeys = KeyBindingRegistryImplExtention.removeAndProcess(MinecraftClient.getInstance().options.allKeys, keybinds.toArray(new KeyBinding[]{}));
         idToUP.clear();
     }
 

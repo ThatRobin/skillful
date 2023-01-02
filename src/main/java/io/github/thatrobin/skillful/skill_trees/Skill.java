@@ -3,8 +3,10 @@ package io.github.thatrobin.skillful.skill_trees;
 import com.google.common.collect.Sets;
 import io.github.apace100.apoli.power.PowerType;
 import io.github.apace100.apoli.power.PowerTypeRegistry;
+import io.github.apace100.apoli.power.PowerTypes;
 import io.github.apace100.apoli.power.factory.condition.ConditionFactory;
 import io.github.apace100.apoli.power.factory.condition.ConditionTypes;
+import io.github.apace100.apoli.registry.ApoliRegistries;
 import net.minecraft.advancement.AdvancementFrame;
 import net.minecraft.entity.Entity;
 import net.minecraft.item.ItemConvertible;
@@ -27,13 +29,13 @@ public class Skill {
     private final SkillDisplay display;
     private final Identifier id;
     @Nullable
-    private final List<PowerType<?>> powerTypes;
+    private final List<Identifier> powerTypes;
     private final ConditionFactory<Entity>.Instance condition;
     private final int cost;
     private final Set<Skill> children = Sets.newLinkedHashSet();
     private final Text text;
 
-    public Skill(Identifier id, @Nullable Skill parent, @Nullable SkillDisplay display, @Nullable List<PowerType<?>> powerTypes, int cost, ConditionFactory<Entity>.Instance condition) {
+    public Skill(Identifier id, @Nullable Skill parent, @Nullable SkillDisplay display, @Nullable List<Identifier> powerTypes, int cost, ConditionFactory<Entity>.Instance condition) {
         this.id = id;
         this.cost = cost;
         this.powerTypes = powerTypes;
@@ -87,7 +89,7 @@ public class Skill {
         return this.condition;
     }
 
-    public List<PowerType<?>> getPowers() {
+    public List<Identifier> getPowers() {
         return this.powerTypes;
     }
 
@@ -117,7 +119,7 @@ public class Skill {
     public static class Task {
         @Nullable
         private Identifier parentId;
-        private List<PowerType<?>> powerTypes;
+        private List<Identifier> powerTypes;
         private List<Identifier> defaultPowerTypes;
         @Nullable
         private Skill parentObj;
@@ -126,7 +128,7 @@ public class Skill {
         private ConditionFactory<Entity>.Instance condition;
         private int cost;
 
-        Task(@Nullable Identifier parentId, @Nullable SkillDisplay display, @Nullable List<PowerType<?>> powerTypes, @Nullable List<Identifier> defaultPowerTypes, int cost, ConditionFactory<Entity>.Instance condition) {
+        Task(@Nullable Identifier parentId, @Nullable SkillDisplay display, @Nullable List<Identifier> powerTypes, @Nullable List<Identifier> defaultPowerTypes, int cost, ConditionFactory<Entity>.Instance condition) {
             this.parentId = parentId;
             this.display = display;
             this.powerTypes = powerTypes;
@@ -178,11 +180,11 @@ public class Skill {
             return this;
         }
 
-        public void powers(List<PowerType<?>> powerTypes) {
+        public void powers(List<Identifier> powerTypes) {
             this.powerTypes = powerTypes;
         }
 
-        public List<PowerType<?>> getPowers() {
+        public List<Identifier> getPowers() {
             return this.powerTypes;
         }
 
@@ -241,8 +243,8 @@ public class Skill {
             } else {
                 buf.writeString("powers");
                 buf.writeInt(this.powerTypes.size());
-                for(PowerType<?> powerType : this.powerTypes) {
-                    buf.writeIdentifier(powerType.getIdentifier());
+                for(Identifier powerType : this.powerTypes) {
+                    buf.writeIdentifier(powerType);
                 }
             }
             if (this.defaultPowerTypes == null || this.defaultPowerTypes.isEmpty()) {
@@ -283,19 +285,19 @@ public class Skill {
 
         public static Skill.Task fromPacket(PacketByteBuf buf) {
             int cost = buf.readInt();
-            List<PowerType<?>> powers = null;
+            List<Identifier> powers = null;
             List<Identifier> defaultPowers = null;
             if(!buf.readString().equals("none")) {
                 int loop = buf.readInt();
-                powers = Lists.newArrayList();
+                powers = new LinkedList<>();
                 for (int i = 0; i < loop; i++) {
                     Identifier id = buf.readIdentifier();
-                    powers.add(PowerTypeRegistry.get(id));
+                    powers.add(id);
                 }
             }
             if(!buf.readString().equals("none")) {
                 int loop = buf.readInt();
-                defaultPowers = Lists.newArrayList();
+                defaultPowers = new LinkedList<>();
                 for (int i = 0; i < loop; i++) {
                     Identifier id = buf.readIdentifier();
                     defaultPowers.add(id);

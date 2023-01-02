@@ -33,7 +33,6 @@ public class SkillTabS2C {
 
     @Environment(EnvType.CLIENT)
     private static void recieveSkillData(MinecraftClient minecraftClient, ClientPlayNetworkHandler clientPlayNetworkHandler, PacketByteBuf packetByteBuf, PacketSender packetSender) {
-        Skillful.skillManager = new ClientSkillManager();
         Map<Identifier, Skill.Task> map = packetByteBuf.readMap(PacketByteBuf::readIdentifier, Skill.Task::fromPacket);
         Skillful.skillManager.getManager().load(map);
 
@@ -47,25 +46,24 @@ public class SkillTabS2C {
     private static void sendKeyBinds(MinecraftClient minecraftClient, ClientPlayNetworkHandler clientPlayNetworkHandler, PacketByteBuf packetByteBuf, PacketSender packetSender) {
         try {
             int amount = packetByteBuf.readInt();
-            Map<Identifier, KeyBinding> map = new HashMap<>();
+            Map<Identifier, KeybindingData> map = new HashMap<>();
             for(int i = 0; i < amount; i++) {
                 Identifier id = Identifier.tryParse(packetByteBuf.readString());
-                KeyBinding key = KeybindingData.fromBuffer(packetByteBuf);
+                KeybindingData key = KeybindingData.fromBuffer(packetByteBuf);
                 map.put(id, key);
             }
             minecraftClient.execute(() -> {
                 KeybindRegistry.reset();
                 map.forEach(((identifier, keyBinding) -> {
                     if (!KeybindRegistry.contains(identifier)) {
-                        KeybindRegistry.register(identifier, keyBinding);
+                        KeybindRegistry.registerClient(identifier, keyBinding);
                     }
                 }));
                 minecraftClient.options.allKeys = KeyBindingRegistryImpl.process(minecraftClient.options.allKeys);
-                Skillful.LOGGER.info("Finished loading client KeyBinding from data files. Registry contains " + KeybindRegistry.size() + " KeyBinding files.");
-
             });
+            Skillful.LOGGER.info("Finished loading client KeyBinding from data files. Registry contains " + KeybindRegistry.size() + " KeyBinding files.");
         } catch (Exception e) {
-            Skillful.LOGGER.error(e);
+            Skillful.LOGGER.error(e.getStackTrace());
         }
 
     }

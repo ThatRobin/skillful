@@ -29,12 +29,12 @@ public class KeybindManager extends MultiJsonDataLoader implements IdentifiableR
 
     @Override
     protected void apply(Map<Identifier, List<JsonElement>> prepared, ResourceManager manager, Profiler profiler) {
-        KeybindRegistry.clear();
+        //KeybindRegistry.clear();
         prepared.forEach((id, jel) -> jel.forEach(je -> {
             try {
                 KeybindingData key = SkillfulDataTypes.KEYBINDING.read(je);
                 if(!KeybindRegistry.contains(id)) {
-                    KeybindRegistry.register(id, key.getKeyBinding());
+                    KeybindRegistry.registerServer(id, key);
                 }
             } catch(Exception e) {
                 Skillful.LOGGER.error("There was a problem reading a KeyBinding file: " + id.toString() + " (skipping): " + e.getMessage());

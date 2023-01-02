@@ -8,44 +8,48 @@ import net.minecraft.util.Identifier;
 
 public class KeybindingData {
 
-    private KeyBinding keyBinding;
+    private String translationKey;
+    private String keyKey;
+    private String category;
 
-    public KeybindingData(KeyBinding keyBinding) {
-        this.keyBinding = keyBinding;
-    }
-
-    public KeyBinding getKeyBinding() {
-        return keyBinding;
+    public KeybindingData(String translationKey, String keyKey, String category) {
+        this.category = category;
+        this.keyKey = keyKey;
+        this.translationKey = translationKey;
     }
 
     public String getTranslationKey() {
-        return this.keyBinding.getTranslationKey();
+        return this.translationKey;
+    }
+
+    public String getKeyKey() {
+        return this.keyKey;
     }
 
     public String getCategory() {
-        return this.keyBinding.getCategory();
+        return this.category;
     }
 
     public PacketByteBuf toBuffer(PacketByteBuf buf, Identifier identifier) {
-        String name = this.keyBinding.getTranslationKey();
-        String category = this.keyBinding.getCategory();
-        int code = this.keyBinding.getDefaultKey().getCode();
+        String name = this.translationKey;
+        String key = this.keyKey;
+        String category = this.category;
         buf.writeString(identifier.toString());
         buf.writeString(name);
+        buf.writeString(key);
         buf.writeString(category);
-        buf.writeInt(code);
         return buf;
     }
 
-    public static KeyBinding fromBuffer(PacketByteBuf buf) {
+    public static KeybindingData fromBuffer(PacketByteBuf buf) {
         Identifier id = Identifier.tryParse(buf.readString());
         String name = buf.readString();
+        String key = buf.readString();
         String category = buf.readString();
-        int code = buf.readInt();
         if (id != null) {
-            return new KeyBinding("key." + id.getNamespace() + "." + id.getPath(), InputUtil.Type.KEYSYM, code, category);
+            return new KeybindingData("key." + id.getNamespace() + "." + id.getPath(), key, category);
         } else {
-            return new KeyBinding(name, InputUtil.Type.KEYSYM, code, category);
+            return new KeybindingData(name, key, category);
         }
     }
 }

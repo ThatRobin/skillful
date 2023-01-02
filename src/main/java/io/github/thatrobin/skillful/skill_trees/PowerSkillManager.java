@@ -12,7 +12,7 @@ public class PowerSkillManager {
         PowerTypes.registerAdditionalData("skill", (powerTypeId, factoryId, isSubPower, data, powerType) -> {
             Skill.Task task = SkillfulDataTypes.POWER_SKILL.read(data);
             SkillDisplay display = task.getDisplay();
-            task.powers(List.of(powerType));
+            task.powers(List.of(powerType.getIdentifier()));
             if(display != null) {
                 display.setName(powerType.getName());
                 display.setDescription(powerType.getDescription());

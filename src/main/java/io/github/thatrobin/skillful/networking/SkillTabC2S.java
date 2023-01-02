@@ -13,6 +13,7 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.Identifier;
 import org.apache.commons.compress.utils.Lists;
 
+import java.util.LinkedList;
 import java.util.List;
 
 public class SkillTabC2S {
@@ -24,12 +25,12 @@ public class SkillTabC2S {
     private static void applyPowers(MinecraftServer minecraftServer, ServerPlayerEntity playerEntity, ServerPlayNetworkHandler serverPlayNetworkHandler, PacketByteBuf packetByteBuf, PacketSender packetSender) {
         boolean hasParent = packetByteBuf.readBoolean();
         if(hasParent) {
-            List<Identifier> parentPowerIds = Lists.newArrayList();
+            List<Identifier> parentPowerIds = new LinkedList<>();
             int parentSize = packetByteBuf.readInt();
             for (int i = 0; i < parentSize; i++) {
                 parentPowerIds.add(packetByteBuf.readIdentifier());
             }
-            List<Identifier> powerIds = Lists.newArrayList();
+            List<Identifier> powerIds = new LinkedList<>();
             int powerSize = packetByteBuf.readInt();
             for (int i = 0; i < powerSize; i++) {
                 powerIds.add(packetByteBuf.readIdentifier());
@@ -42,17 +43,19 @@ public class SkillTabC2S {
                     PowerHolderComponent component = PowerHolderComponent.KEY.get(playerEntity);
                     if (parentPowerIds.stream().allMatch((identifier) -> component.hasPower(PowerTypeRegistry.get(identifier))) && powerIds.stream().noneMatch((identifier) -> component.hasPower(PowerTypeRegistry.get(identifier)))) {
                         SkillPointInterface skillPointInterface = SkillPointInterface.INSTANCE.get(playerEntity);
-                        if(cost < skillPointInterface.getSkillPoints(rootId)) {
-                            skillPointInterface.removeSkillPoints(rootId, cost);
-                            skillPointInterface.sync();
+                        if(skillPointInterface.getSkillPoints(rootId) != null) {
+                            if (cost <= skillPointInterface.getSkillPoints(rootId)) {
+                                skillPointInterface.removeSkillPoints(rootId, cost);
+                                skillPointInterface.sync();
+                                powerIds.forEach((powerId) -> component.addPower(PowerTypeRegistry.get(powerId), sourceId));
+                            }
+                            component.sync();
                         }
-                        powerIds.forEach((powerId) -> component.addPower(PowerTypeRegistry.get(powerId), sourceId));
-                        component.sync();
                     }
                 }
             });
         } else {
-            List<Identifier> powerIds = Lists.newArrayList();
+            List<Identifier> powerIds = new LinkedList<>();
             int powerSize = packetByteBuf.readInt();
             for (int i = 0; i < powerSize; i++) {
                 powerIds.add(packetByteBuf.readIdentifier());
