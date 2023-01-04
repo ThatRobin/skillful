@@ -25,7 +25,7 @@ public class SkillPointImpl implements SkillPointInterface {
         if (this.skillPoints.containsKey(skillTree)) {
             return this.skillPoints.get(skillTree);
         }
-        return null;
+        return 0;
     }
 
     @Override
