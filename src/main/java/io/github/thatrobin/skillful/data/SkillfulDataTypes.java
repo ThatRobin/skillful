@@ -1,31 +1,23 @@
 package io.github.thatrobin.skillful.data;
 
 import io.github.apace100.apoli.data.ApoliDataTypes;
-import io.github.apace100.apoli.power.PowerType;
 import io.github.apace100.apoli.power.PowerTypeReference;
 import io.github.apace100.apoli.power.PowerTypeRegistry;
 import io.github.apace100.calio.data.SerializableData;
 import io.github.apace100.calio.data.SerializableDataType;
 import io.github.apace100.calio.data.SerializableDataTypes;
-import io.github.thatrobin.skillful.Skillful;
 import io.github.thatrobin.skillful.skill_trees.Skill;
 import io.github.thatrobin.skillful.skill_trees.SkillDisplay;
 import io.github.thatrobin.skillful.skill_trees.SkillPowerRegistry;
-import io.github.thatrobin.skillful.skill_trees.SkillTreeRegistry;
 import io.github.thatrobin.skillful.utils.KeybindingData;
 import net.minecraft.advancement.AdvancementFrame;
-import net.minecraft.client.option.KeyBinding;
-import net.minecraft.client.util.InputUtil;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
-import org.apache.commons.compress.utils.Lists;
-import org.lwjgl.glfw.GLFW;
 
 import java.util.LinkedList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class SkillfulDataTypes {
 
@@ -138,12 +130,9 @@ public class SkillfulDataTypes {
             (data) -> new KeybindingData(data.get("key"), data.get("key"), data.get("category")),
             ((serializableData, keyBinding) -> {
                 SerializableData.Instance data = serializableData.new Instance();
-                data.set("key", keyBinding.getKeyKey());
-                data.set("category", keyBinding.getCategory());
+                data.set("key", keyBinding.keyKey());
+                data.set("category", keyBinding.category());
                 return data;
             }));
 
-    @SuppressWarnings("rawtypes")
-    public static final SerializableDataType<List<PowerTypeReference>> POWER_TYPES =
-            SerializableDataType.list(ApoliDataTypes.POWER_TYPE);
 }

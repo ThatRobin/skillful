@@ -19,6 +19,8 @@ import net.minecraft.client.util.NarratorManager;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.network.PacketByteBuf;
+import net.minecraft.text.ClickEvent;
+import net.minecraft.text.Style;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import org.jetbrains.annotations.Nullable;
@@ -31,7 +33,7 @@ public class SkillScreen extends Screen implements ClientSkillManager.Listener {
     private static final Identifier TABS_TEXTURE = new Identifier("textures/gui/advancements/tabs.png");
     public static final int WINDOW_WIDTH = 252;
     public static final int WINDOW_HEIGHT = 140;
-    private static final Text SAD_LABEL_TEXT = Text.translatable("skills.sad_label");
+    private static final Text SAD_LABEL_TEXT = Text.translatable("skills.sad_label").setStyle(Text.translatable("skills.sad_label").getStyle().withClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, "https://skillful-docs.readthedocs.io/en/latest/")));;
     private static final Text EMPTY_TEXT = Text.translatable("skills.empty");
     private static final Text SKILLS_TEXT = Text.translatable("gui.skills");
     private final ClientSkillManager skillManager;
@@ -82,7 +84,7 @@ public class SkillScreen extends Screen implements ClientSkillManager.Listener {
                                 if (widget.getSkill().getParent() != null) {
                                     List<Identifier> powerTypes = widget.getSkill().getParent().getPowers();
                                     if (powerTypes != null) {
-                                        if (powerTypes.stream().allMatch((powerType) -> PowerTypeRegistry.contains(powerType))) {
+                                        if (powerTypes.stream().allMatch(PowerTypeRegistry::contains)) {
                                             if(widget.getSkill().getCondition() == null || widget.getSkill().getCondition().test(MinecraftClient.getInstance().player)) {
                                                 buyWidgetPower(widget);
                                             }
@@ -90,9 +92,11 @@ public class SkillScreen extends Screen implements ClientSkillManager.Listener {
                                     }
                                 } else {
                                     List<Identifier> powerTypes = widget.getSkill().getPowers();
-                                    if (powerTypes.stream().allMatch((powerType) -> PowerTypeRegistry.contains(powerType))) {
-                                        if(widget.getSkill().getCondition() == null || widget.getSkill().getCondition().test(MinecraftClient.getInstance().player)) {
-                                            buyWidgetPower(widget);
+                                    if(powerTypes != null) {
+                                        if (powerTypes.stream().allMatch(PowerTypeRegistry::contains)) {
+                                            if (widget.getSkill().getCondition() == null || widget.getSkill().getCondition().test(MinecraftClient.getInstance().player)) {
+                                                buyWidgetPower(widget);
+                                            }
                                         }
                                     }
                                 }

@@ -16,7 +16,7 @@ public interface ApoliClientAccessorMixin {
     }
 
     @Accessor
-    static void setIdToKeyBindingMap(HashMap<String, KeyBinding> map) {
+    static void setIdToKeyBindingMap(HashMap<String, KeyBinding> ignoredMap) {
         throw new AssertionError();
     }
 }

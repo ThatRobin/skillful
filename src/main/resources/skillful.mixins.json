@@ -8,7 +8,6 @@
     ],
     "client": [
         "ApoliClientAccessorMixin",
-        "InputUtilTypeAccessorMixin",
         "KeyBindingRegistryImplAccessorMixin"
     ],
     "injectors": {
