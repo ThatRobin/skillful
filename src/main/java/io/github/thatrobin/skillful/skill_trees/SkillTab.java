@@ -5,7 +5,8 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import io.github.thatrobin.skillful.screen.SkillScreen;
 import io.github.thatrobin.skillful.screen.SkillTreeTabType;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.DrawableHelper;
+import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.gui.screen.advancement.AdvancementTab;
 import net.minecraft.client.render.GameRenderer;
 import net.minecraft.client.render.item.ItemRenderer;
 import net.minecraft.client.texture.TextureManager;
@@ -18,7 +19,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Map;
 import java.util.Objects;
 
-public class SkillTab extends DrawableHelper {
+public class SkillTab {
     private final MinecraftClient client;
     private final SkillScreen screen;
     private final SkillTreeTabType type;
@@ -74,35 +75,25 @@ public class SkillTab extends DrawableHelper {
         return this.display;
     }
 
-    public void drawBackground(MatrixStack matrices, int x, int y, boolean selected) {
-        this.type.drawBackground(matrices, this, x, y, selected, this.index);
+    public void drawBackground(DrawContext context, int x, int y, boolean selected) {
+        this.type.drawBackground(context, x, y, selected, this.index);
     }
 
-    public void drawIcon(int x, int y, ItemRenderer itemRenderer) {
-        this.type.drawIcon(x, y, this.index, itemRenderer, this.icon);
+    public void drawIcon(DrawContext context, int x, int y) {
+        this.type.drawIcon(context, x, y, this.index, this.icon);
     }
 
-    public void render(MatrixStack matrices) {
+    public void render(DrawContext context, int x, int y) {
         if (!this.initialized) {
             this.originX = 117 - (this.maxPanX + this.minPanX) / 2f;
             this.originY = 56 - (this.maxPanY + this.minPanY) / 2f;
             this.initialized = true;
         }
 
-        matrices.push();
-        matrices.translate(0.0D, 0.0D, 950.0D);
-        RenderSystem.enableDepthTest();
-        RenderSystem.colorMask(false, false, false, false);
-        fill(matrices, 4680, 2260, -4680, -2260, -16777216);
-        RenderSystem.colorMask(true, true, true, true);
-        matrices.translate(0.0D, 0.0D, -950.0D);
-        RenderSystem.depthFunc(518);
-        fill(matrices, 234, 113, 0, 0, -16777216);
-        RenderSystem.depthFunc(515);
-        Identifier identifier = this.display.getBackground();
-        RenderSystem.setShader(GameRenderer::getPositionTexShader);
-        RenderSystem.setShaderTexture(0, Objects.requireNonNullElse(identifier, TextureManager.MISSING_IDENTIFIER));
-
+        context.enableScissor(x, y, x + 234, y + 113);
+        context.getMatrices().push();
+        context.getMatrices().translate((float)x, (float)y, 0.0F);
+        Identifier identifier = (Identifier)Objects.requireNonNullElse(this.display.getBackground(), TextureManager.MISSING_IDENTIFIER);
         int i = MathHelper.floor(this.originX);
         int j = MathHelper.floor(this.originY);
         int k = i % 16;
@@ -110,26 +101,21 @@ public class SkillTab extends DrawableHelper {
 
         for(int m = -1; m <= 15; ++m) {
             for(int n = -1; n <= 8; ++n) {
-                drawTexture(matrices, k + 16 * m, l + 16 * n, 0.0F, 0.0F, 16, 16, 16, 16);
+                context.drawTexture(identifier, k + 16 * m, l + 16 * n, 0.0F, 0.0F, 16, 16, 16, 16);
             }
         }
 
-        this.rootWidget.renderLines(matrices, i, j, true);
-        this.rootWidget.renderLines(matrices, i, j, false);
-        this.rootWidget.renderWidgets(matrices, i, j);
-        RenderSystem.depthFunc(518);
-        matrices.translate(0.0D, 0.0D, -950.0D);
-        RenderSystem.colorMask(false, false, false, false);
-        fill(matrices, 4680, 2260, -4680, -2260, -16777216);
-        RenderSystem.colorMask(true, true, true, true);
-        RenderSystem.depthFunc(515);
-        matrices.pop();
+        this.rootWidget.renderLines(context, i, j, true);
+        this.rootWidget.renderLines(context, i, j, false);
+        this.rootWidget.renderWidgets(context, i, j);
+        context.getMatrices().pop();
+        context.disableScissor();
     }
 
-    public void drawWidgetTooltip(MatrixStack matrices, int mouseX, int mouseY, int x) {
-        matrices.push();
-        matrices.translate(0.0D, 0.0D, -200.0D);
-        fill(matrices, 0, 0, 234, 113, MathHelper.floor(this.alpha * 255.0F) << 24);
+    public void drawWidgetTooltip(DrawContext context, int mouseX, int mouseY, int x, int y) {
+        context.getMatrices().push();
+        context.getMatrices().translate(0.0D, 0.0D, -200.0D);
+        context.fill(0, 0, 234, 113, MathHelper.floor(this.alpha * 255.0F) << 24);
         boolean bl = false;
         int i = MathHelper.floor(this.originX);
         int j = MathHelper.floor(this.originY);
@@ -137,13 +123,13 @@ public class SkillTab extends DrawableHelper {
             for (SkillWidget skillWidget : this.widgets.values()) {
                 if (skillWidget.shouldRender(i, j, mouseX, mouseY)) {
                     bl = true;
-                    skillWidget.drawTooltip(matrices, i, j, x);
+                    skillWidget.drawTooltip(context, i, j, this.alpha, x, y);
                     break;
                 }
             }
         }
 
-        matrices.pop();
+        context.getMatrices().pop();
         if (bl) {
             this.alpha = MathHelper.clamp(this.alpha + 0.02F, 0.0F, 0.3F);
         } else {

@@ -3,13 +3,12 @@ package io.github.thatrobin.skillful.skill_trees;
 import com.google.common.collect.Lists;
 import com.mojang.blaze3d.systems.RenderSystem;
 import io.github.apace100.apoli.component.PowerHolderComponent;
-import io.github.apace100.apoli.power.PowerType;
 import io.github.apace100.apoli.power.PowerTypeRegistry;
 import io.github.thatrobin.skillful.Skillful;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextHandler;
 import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gui.DrawableHelper;
+import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.render.GameRenderer;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.text.*;
@@ -20,7 +19,8 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 
-public class SkillWidget extends DrawableHelper {
+public class SkillWidget {
+    private static final Identifier TITLE_BOX_TEXTURE = new Identifier("advancements/title_box");
     private static final Identifier WIDGETS_TEXTURE = Skillful.identifier("textures/gui/skills/widgets.png");
     private static final int[] SPLIT_OFFSET_CANDIDATES = new int[]{0, 10, -10, 25, -25};
     private final SkillTab tab;
@@ -111,7 +111,7 @@ public class SkillWidget extends DrawableHelper {
         }
     }
 
-    public void renderLines(MatrixStack matrices, int x, int y, boolean border) {
+    public void renderLines(DrawContext context, int x, int y, boolean border) {
         if (this.parent != null) {
             int i = x + this.parent.x + 13;
             int j = x + this.parent.x + 26 + 4;
@@ -120,27 +120,27 @@ public class SkillWidget extends DrawableHelper {
             int m = y + this.y + 13;
             int n = border ? -16777216 : -1;
             if (border) {
-                this.drawHorizontalLine(matrices, j, i, k - 1, n);
-                this.drawHorizontalLine(matrices, j + 1, i, k, n);
-                this.drawHorizontalLine(matrices, j, i, k + 1, n);
-                this.drawHorizontalLine(matrices, l, j - 1, m - 1, n);
-                this.drawHorizontalLine(matrices, l, j - 1, m, n);
-                this.drawHorizontalLine(matrices, l, j - 1, m + 1, n);
-                this.drawVerticalLine(matrices, j - 1, m, k, n);
-                this.drawVerticalLine(matrices, j + 1, m, k, n);
+                context.drawHorizontalLine(j, i, k - 1, n);
+                context.drawHorizontalLine(j + 1, i, k, n);
+                context.drawHorizontalLine(j, i, k + 1, n);
+                context.drawHorizontalLine(l, j - 1, m - 1, n);
+                context.drawHorizontalLine(l, j - 1, m, n);
+                context.drawHorizontalLine(l, j - 1, m + 1, n);
+                context.drawVerticalLine(j - 1, m, k, n);
+                context.drawVerticalLine(j + 1, m, k, n);
             } else {
-                this.drawHorizontalLine(matrices, j, i, k, n);
-                this.drawHorizontalLine(matrices, l, j, m, n);
-                this.drawVerticalLine(matrices, j, m, k, n);
+                context.drawHorizontalLine(j, i, k, n);
+                context.drawHorizontalLine(l, j, m, n);
+                context.drawVerticalLine(j, m, k, n);
             }
         }
 
         for (SkillWidget skillWidget : this.children) {
-            skillWidget.renderLines(matrices, x, y, border);
+            skillWidget.renderLines(context, x, y, border);
         }
     }
 
-    public void renderWidgets(MatrixStack matrices, int x, int y) {
+    public void renderWidgets(DrawContext context, int x, int y) {
         if (!this.display.isHidden()) {
             if (MinecraftClient.getInstance().player != null) {
                 SkillObtainedStatus skillObtainedStatus = SkillObtainedStatus.LOCKED;
@@ -154,14 +154,12 @@ public class SkillWidget extends DrawableHelper {
                         skillObtainedStatus = SkillObtainedStatus.OBTAINED;
                     }
                 }
-                RenderSystem.setShader(GameRenderer::getPositionTexShader);
-                RenderSystem.setShaderTexture(0, WIDGETS_TEXTURE);
-                this.drawTexture(matrices, x + this.x + 3, y + this.y, this.display.getFrame().getTextureV(), 128 + skillObtainedStatus.getSpriteIndex() * 26, 26, 26);
-                this.client.getItemRenderer().renderInGui(this.display.getIcon(), x + this.x + 8, y + this.y + 5);
+                context.drawGuiTexture(skillObtainedStatus.getFrameTexture(this.display.getFrame()), x + this.x + 3, y + this.y,26, 26);
+                context.drawItemWithoutEntity(this.display.getIcon(), x + this.x + 8, y + this.y + 5);
             }
         }
         for (SkillWidget widget : this.children) {
-            widget.renderWidgets(matrices, x, y);
+            widget.renderWidgets(context, x, y);
         }
     }
 
@@ -175,7 +173,7 @@ public class SkillWidget extends DrawableHelper {
     }
 
     @SuppressWarnings("ConstantConditions")
-    public void drawTooltip(MatrixStack matrices, int originX, int originY, int x) {
+    public void drawTooltip(DrawContext context, int originX, int originY, float alpha, int x, int y) {
         boolean bl = x + originX + this.x + this.width + 26 >= this.tab.getScreen().width;
         boolean bl2 = 113 - originY - this.y - 26 <= 6 + this.description.size() * this.client.textRenderer.fontHeight;
         SkillObtainedStatus skillObtainedStatus = SkillObtainedStatus.LOCKED;
@@ -194,9 +192,6 @@ public class SkillWidget extends DrawableHelper {
             }
         }
         int k = this.width - j;
-        RenderSystem.setShader(GameRenderer::getPositionTexShader);
-        RenderSystem.setShaderTexture(0, WIDGETS_TEXTURE);
-        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
         RenderSystem.enableBlend();
         int l = originY + this.y;
         int m;
@@ -211,21 +206,21 @@ public class SkillWidget extends DrawableHelper {
         int n = 32 + var10001 * 9;
         if (!this.description.isEmpty()) {
             if (bl2) {
-                this.renderDescriptionBackground(matrices, m, l + 26 - n, this.width, n);
+                context.drawGuiTexture(TITLE_BOX_TEXTURE, m, l + 26 - n, this.width, n);
             } else {
-                this.renderDescriptionBackground(matrices, m, l, this.width, n);
+                context.drawGuiTexture(TITLE_BOX_TEXTURE, m, l, this.width, n);
             }
         }
-        this.drawTexture(matrices, m, l, 0, skillObtainedStatus.getSpriteIndex() * 26, j, 26);
-        this.drawTexture(matrices, m + j, l, 200 - k, skillObtainedStatus.getSpriteIndex() * 26, k, 26);
-        this.drawTexture(matrices, originX + this.x + 3, originY + this.y, this.display.getFrame().getTextureV(), 128 + skillObtainedStatus.getSpriteIndex() * 26, 26, 26);
+        context.drawGuiTexture(skillObtainedStatus.getBoxTexture(), 200, 26, 0, 0, m, l, j, 26);
+        context.drawGuiTexture(skillObtainedStatus.getBoxTexture(), 200, 26, 200 - k, 0, m + j, l, 200 - k, 26);
+        context.drawGuiTexture(skillObtainedStatus.getFrameTexture(this.display.getFrame()), originX + this.x + 3, originY + this.y, 26, 26);
         if (bl) {
-            this.client.textRenderer.drawWithShadow(matrices, this.title, (float)(m + 5), (float)(originY + this.y + 9), -1);
+            context.drawTextWithShadow(this.client.textRenderer, this.title, (m + 5), (originY + this.y + 9), -1);
         } else {
-            this.client.textRenderer.drawWithShadow(matrices, this.title, (float)(originX + this.x + 32), (float)(originY + this.y + 9), -1);
+            context.drawTextWithShadow(this.client.textRenderer, this.title, (originX + this.x + 32), (originY + this.y + 9), -1);
         }
 
-        float var10003;
+        int var10003;
         int o;
         int var10004;
         TextRenderer var21;
@@ -234,49 +229,23 @@ public class SkillWidget extends DrawableHelper {
             for(o = 0; o < this.description.size(); ++o) {
                 var21 = this.client.textRenderer;
                 var22 = this.description.get(o);
-                var10003 = (float)(m + 5);
+                var10003 = m + 5;
                 var10004 = l + 26 - n + 7;
                 Objects.requireNonNull(this.client.textRenderer);
-                var21.draw(matrices, var22, var10003, (float)(var10004 + o * 9), -5592406);
+                context.drawText(var21, var22, var10003, (var10004 + o * 9), -5592406, false);
             }
         } else {
             for(o = 0; o < this.description.size(); ++o) {
                 var21 = this.client.textRenderer;
                 var22 = this.description.get(o);
-                var10003 = (float)(m + 5);
+                var10003 = m + 5;
                 var10004 = originY + this.y + 9 + 17;
                 Objects.requireNonNull(this.client.textRenderer);
-                var21.draw(matrices, var22, var10003, (float)(var10004 + o * 9), -5592406);
+                context.drawText(var21, var22, var10003, (var10004 + o * 9), -5592406, false);
             }
         }
 
-        this.client.getItemRenderer().renderInGui(this.display.getIcon(), originX + this.x + 8, originY + this.y + 5);
-    }
-
-    protected void renderDescriptionBackground(MatrixStack matrices, int x, int y, int width, int height) {
-        this.drawTexture(matrices, x, y, 0, 52, 10, 10);
-        this.drawTextureRepeatedly(matrices, x + 10, y, width - 10 - 10, 10, 10, 52, 200 - 10 - 10, 26);
-        this.drawTexture(matrices, x + width - 10, y, 200 - 10, 52, 10, 10);
-        this.drawTexture(matrices, x, y + height - 10, 0, 52 + 26 - 10, 10, 10);
-        this.drawTextureRepeatedly(matrices, x + 10, y + height - 10, width - 10 - 10, 10, 10, 52 + 26 - 10, 200 - 10 - 10, 26);
-        this.drawTexture(matrices, x + width - 10, y + height - 10, 200 - 10, 52 + 26 - 10, 10, 10);
-        this.drawTextureRepeatedly(matrices, x, y + 10, 10, height - 10 - 10, 0, 52 + 10, 200, 26 - 10 - 10);
-        this.drawTextureRepeatedly(matrices, x + 10, y + 10, width - 10 - 10, height - 10 - 10, 10, 52 + 10, 200 - 10 - 10, 26 - 10 - 10);
-        this.drawTextureRepeatedly(matrices, x + width - 10, y + 10, 10, height - 10 - 10, 200 - 10, 52 + 10, 200, 26 - 10 - 10);
-    }
-
-    protected void drawTextureRepeatedly(MatrixStack matrices, int x, int y, int width, int height, int u, int v, int textureWidth, int textureHeight) {
-        for(int i = 0; i < width; i += textureWidth) {
-            int j = x + i;
-            int k = Math.min(textureWidth, width - i);
-
-            for(int l = 0; l < height; l += textureHeight) {
-                int m = y + l;
-                int n = Math.min(textureHeight, height - l);
-                this.drawTexture(matrices, j, m, u, v, k, n);
-            }
-        }
-
+        context.drawItemWithoutEntity(this.display.getIcon(), originX + this.x + 8, originY + this.y + 5);
     }
 
     public boolean shouldRender(int originX, int originY, int mouseX, int mouseY) {

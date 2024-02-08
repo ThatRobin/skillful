@@ -14,6 +14,7 @@ import net.minecraft.client.option.KeyBinding;
 import net.minecraft.network.ClientConnection;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.server.PlayerManager;
+import net.minecraft.server.network.ConnectedClientData;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.Identifier;
 import org.spongepowered.asm.mixin.Mixin;
@@ -27,8 +28,8 @@ import java.util.Map;
 @Mixin(value = PlayerManager.class, priority = 1001)
 public class PlayerManagerMixin {
 
-    @Inject(at = @At("TAIL"), method = "onPlayerConnect(Lnet/minecraft/network/ClientConnection;Lnet/minecraft/server/network/ServerPlayerEntity;)V")
-    private void onConnect(ClientConnection connection, ServerPlayerEntity player, CallbackInfo info) {
+    @Inject(at = @At("TAIL"), method = "onPlayerConnect")
+    private void onConnect(ClientConnection connection, ServerPlayerEntity player, ConnectedClientData clientData, CallbackInfo ci) {
         PacketByteBuf skillData = new PacketByteBuf(Unpooled.buffer());
         Map<Identifier, Skill.Task> map = new HashMap<>();
         SkillTreeRegistry.entries().forEach(identifierTaskEntry -> map.put(identifierTaskEntry.getKey(), identifierTaskEntry.getValue()));

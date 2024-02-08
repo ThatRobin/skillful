@@ -8,7 +8,7 @@ import io.github.thatrobin.skillful.Skillful;
 import io.github.thatrobin.skillful.components.SkillPointInterface;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.util.registry.Registry;
+import net.minecraft.registry.Registry;
 
 public class EntityActions {
 
@@ -18,7 +18,7 @@ public class EntityActions {
                 .add("points", SerializableDataTypes.INT),
                 (data, entity) -> {
                     if (entity instanceof PlayerEntity player) {
-                        if(!entity.world.isClient) {
+                        if(!entity.getWorld().isClient) {
                             SkillPointInterface skillPointInterface = SkillPointInterface.INSTANCE.get(player);
                             skillPointInterface.addSkillPoints(data.getId("skill_tree"), data.getInt("points"));
                             skillPointInterface.sync();

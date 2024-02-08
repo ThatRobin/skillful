@@ -10,7 +10,7 @@ import java.util.List;
 @Mixin(value = KeyBindingRegistryImpl.class, remap = false)
 public interface KeyBindingRegistryImplAccessorMixin {
 
-    @Accessor("moddedKeyBindings")
+    @Accessor("MODDED_KEY_BINDINGS")
     static List<KeyBinding> getModdedKeyBindings() {
         throw new AssertionError();
     }

@@ -12,6 +12,7 @@ import io.github.thatrobin.skillful.skill_trees.*;
 import io.netty.buffer.Unpooled;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.advancement.AdvancementsScreen;
 import net.minecraft.client.render.GameRenderer;
@@ -123,15 +124,13 @@ public class SkillScreen extends Screen implements ClientSkillManager.Listener {
         }
     }
 
-    @Override
-    public void render(MatrixStack matrices, int mouseX, int mouseY, float delta) {
-        super.render(matrices, mouseX, mouseY, delta);
+    public void render(DrawContext context, int mouseX, int mouseY, float delta) {
         int i = (this.width - 252) / 2;
         int j = (this.height - 140) / 2;
-        this.renderBackground(matrices);
-        this.drawSkillTree(matrices, i, j);
-        this.drawWindow(matrices, i, j);
-        this.drawWidgetTooltip(matrices, mouseX, mouseY, i, j);
+        this.renderBackground(context, mouseX, mouseY, delta);
+        this.drawSkillTree(context, mouseX, mouseY, i, j);
+        this.drawWindow(context, i, j);
+        this.drawWidgetTooltip(context, mouseX, mouseY, i, j);
     }
 
     public boolean mouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
@@ -149,44 +148,42 @@ public class SkillScreen extends Screen implements ClientSkillManager.Listener {
         }
     }
 
-    private void drawSkillTree(MatrixStack matrices, int x, int y) {
+    private void drawSkillTree(DrawContext context, int mouseX, int mouseY, int x, int y) {
         SkillTab skillTab = this.selectedTab;
         if (skillTab == null) {
-            AdvancementsScreen.fill(matrices, x + 9, y + 18, x + 9 + 234, y + 18 + 113, -16777216);
+            context.fill(x + 9, y + 18, x + 9 + 234, y + 18 + 113, -16777216);
             int i = x + 9 + 117;
-            AdvancementsScreen.drawCenteredText(matrices, this.textRenderer, EMPTY_TEXT, i, y + 18 + 56 - this.textRenderer.fontHeight / 2, -1);
-            AdvancementsScreen.drawCenteredText(matrices, this.textRenderer, SAD_LABEL_TEXT, i, y + 18 + 113 - this.textRenderer.fontHeight, -1);
+            context.drawCenteredTextWithShadow(this.textRenderer, EMPTY_TEXT, i, y + 18 + 56 - this.textRenderer.fontHeight / 2, -1);
+            context.drawCenteredTextWithShadow(this.textRenderer, SAD_LABEL_TEXT, i, y + 18 + 113 - this.textRenderer.fontHeight, -1);
             return;
         }
         MatrixStack matrixStack = RenderSystem.getModelViewStack();
         matrixStack.push();
         matrixStack.translate(x + 9, y + 18, 0.0);
         RenderSystem.applyModelViewMatrix();
-        skillTab.render(matrices);
+        skillTab.render(context, x, y);
         matrixStack.pop();
         RenderSystem.applyModelViewMatrix();
         RenderSystem.depthFunc(515);
         RenderSystem.disableDepthTest();
     }
 
-    public void drawWindow(MatrixStack matrices, int x, int y) {
-        RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
+    public void drawWindow(DrawContext context, int x, int y) {
         RenderSystem.enableBlend();
-        RenderSystem.setShader(GameRenderer::getPositionTexShader);
         RenderSystem.setShaderTexture(0, WINDOW_TEXTURE);
-        this.drawTexture(matrices, x, y, 0, 0, 252, 140);
+        context.drawTexture(WINDOW_TEXTURE, x, y, 0, 0, 252, 140);
         if (this.tabs.size() > 1) {
             RenderSystem.setShaderTexture(0, TABS_TEXTURE);
             for (SkillTab skillTab : this.tabs.values()) {
-                skillTab.drawBackground(matrices, x, y, skillTab == this.selectedTab);
+                skillTab.drawBackground(context, x, y, skillTab == this.selectedTab);
             }
             RenderSystem.defaultBlendFunc();
             for (SkillTab skillTab : this.tabs.values()) {
-                skillTab.drawIcon(x, y, this.itemRenderer);
+                skillTab.drawIcon(context, x, y);
             }
             RenderSystem.disableBlend();
         }
-        this.textRenderer.draw(matrices, SKILLS_TEXT, (float)(x + 8), (float)(y + 6), 0x404040);
+        context.drawText(this.textRenderer, SKILLS_TEXT, (x + 8), (y + 6), 0x404040, false);
 
         if(MinecraftClient.getInstance().player != null) {
             if (this.selectedTab != null) {
@@ -197,7 +194,7 @@ public class SkillScreen extends Screen implements ClientSkillManager.Listener {
                     Text SKILL_POINT_AMOUNT = Text.translatable("gui.skill_point_amount", points);
 
                     int textWidth = this.textRenderer.getWidth(SKILL_POINT_AMOUNT);
-                    this.textRenderer.draw(matrices, SKILL_POINT_AMOUNT, (float) (x + (WINDOW_WIDTH - (textWidth + 8))), (float) (y + 6), 0x404040);
+                    context.drawText(this.textRenderer, SKILL_POINT_AMOUNT, (x + (WINDOW_WIDTH - (textWidth + 8))), (y + 6), 0x404040, false);
                 }
             }
         }
@@ -244,7 +241,7 @@ public class SkillScreen extends Screen implements ClientSkillManager.Listener {
         ClientPlayNetworking.send(SkillTabModPackets.APPLY_POWERS, packetByteBuf);
     }
 
-    private void drawWidgetTooltip(MatrixStack matrices, int mouseX, int mouseY, int x, int y) {
+    private void drawWidgetTooltip(DrawContext context, int mouseX, int mouseY, int x, int y) {
         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
         if (this.selectedTab != null) {
             MatrixStack matrixStack = RenderSystem.getModelViewStack();
@@ -252,7 +249,7 @@ public class SkillScreen extends Screen implements ClientSkillManager.Listener {
             matrixStack.translate((x + 9), (y + 18), 400.0D);
             RenderSystem.applyModelViewMatrix();
             RenderSystem.enableDepthTest();
-            this.selectedTab.drawWidgetTooltip(matrices, mouseX - x - 9, mouseY - y - 18, x);
+            this.selectedTab.drawWidgetTooltip(context, mouseX - x - 9, mouseY - y - 18, x, y);
             RenderSystem.disableDepthTest();
             matrixStack.pop();
             RenderSystem.applyModelViewMatrix();
@@ -261,7 +258,7 @@ public class SkillScreen extends Screen implements ClientSkillManager.Listener {
         if (this.tabs.size() > 1) {
             for (SkillTab skillTab : this.tabs.values()) {
                 if (skillTab.isClickOnTab(x, y, mouseX, mouseY)) {
-                    this.renderTooltip(matrices, skillTab.getTitle(), mouseX, mouseY);
+                    context.drawTooltip(this.textRenderer, skillTab.getTitle(), mouseX, mouseY);
                 }
             }
         }

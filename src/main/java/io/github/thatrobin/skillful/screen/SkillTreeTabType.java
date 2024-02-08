@@ -2,28 +2,28 @@ package io.github.thatrobin.skillful.screen;
 
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.client.gui.DrawableHelper;
-import net.minecraft.client.render.item.ItemRenderer;
-import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.client.gui.DrawContext;
 import net.minecraft.item.ItemStack;
+import net.minecraft.util.Identifier;
 
 @Environment(EnvType.CLIENT)
 public
 enum SkillTreeTabType {
-    ABOVE(0, 0, 28, 32, 8),
-    BELOW(84, 0, 28, 32, 8),
-    LEFT(0, 64, 32, 28, 5),
-    RIGHT(96, 64, 32, 28, 5);
+    ABOVE(new SkillTreeTabType.Textures(new Identifier("advancements/tab_above_left_selected"), new Identifier("advancements/tab_above_middle_selected"), new Identifier("advancements/tab_above_right_selected")), new SkillTreeTabType.Textures(new Identifier("advancements/tab_above_left"), new Identifier("advancements/tab_above_middle"), new Identifier("advancements/tab_above_right")), 28, 32, 8),
+    BELOW(new SkillTreeTabType.Textures(new Identifier("advancements/tab_below_left_selected"), new Identifier("advancements/tab_below_middle_selected"), new Identifier("advancements/tab_below_right_selected")), new SkillTreeTabType.Textures(new Identifier("advancements/tab_below_left"), new Identifier("advancements/tab_below_middle"), new Identifier("advancements/tab_below_right")), 28, 32, 8),
+    LEFT(new SkillTreeTabType.Textures(new Identifier("advancements/tab_left_top_selected"), new Identifier("advancements/tab_left_middle_selected"), new Identifier("advancements/tab_left_bottom_selected")), new SkillTreeTabType.Textures(new Identifier("advancements/tab_left_top"), new Identifier("advancements/tab_left_middle"), new Identifier("advancements/tab_left_bottom")), 32, 28, 5),
+    RIGHT(new SkillTreeTabType.Textures(new Identifier("advancements/tab_right_top_selected"), new Identifier("advancements/tab_right_middle_selected"), new Identifier("advancements/tab_right_bottom_selected")), new SkillTreeTabType.Textures(new Identifier("advancements/tab_right_top"), new Identifier("advancements/tab_right_middle"), new Identifier("advancements/tab_right_bottom")), 32, 28, 5);
 
-    private final int u;
-    private final int v;
+    private final SkillTreeTabType.Textures selectedTextures;
+    private final SkillTreeTabType.Textures unselectedTextures;
+
     private final int width;
     private final int height;
     private final int tabCount;
 
-    SkillTreeTabType(int u, int v, int width, int height, int tabCount) {
-        this.u = u;
-        this.v = v;
+    SkillTreeTabType(SkillTreeTabType.Textures selectedTextures, SkillTreeTabType.Textures unselectedTextures, int width, int height, int tabCount) {
+        this.selectedTextures = selectedTextures;
+        this.unselectedTextures = unselectedTextures;
         this.width = width;
         this.height = height;
         this.tabCount = tabCount;
@@ -33,21 +33,20 @@ enum SkillTreeTabType {
         return this.tabCount;
     }
 
-    public void drawBackground(MatrixStack matrices, DrawableHelper tab, int x, int y, boolean selected, int index) {
-        int i = this.u;
-        if (index > 0) {
-            i += this.width;
+    public void drawBackground(DrawContext context, int x, int y, boolean selected, int index) {
+        SkillTreeTabType.Textures textures = selected ? this.selectedTextures : this.unselectedTextures;
+        Identifier identifier;
+        if (index == 0) {
+            identifier = textures.first();
+        } else if (index == this.tabCount - 1) {
+            identifier = textures.last();
+        } else {
+            identifier = textures.middle();
         }
-
-        if (index == this.tabCount - 1) {
-            i += this.width;
-        }
-
-        int j = selected ? this.v + this.height : this.v;
-        tab.drawTexture(matrices, x + this.getTabX(index), y + this.getTabY(index), i, j, this.width, this.height);
+        context.drawGuiTexture(identifier, x + this.getTabX(index), y + this.getTabY(index), this.width, this.height);
     }
 
-    public void drawIcon(int x, int y, int index, ItemRenderer itemRenderer, ItemStack icon) {
+    public void drawIcon(DrawContext context, int x, int y, int index, ItemStack stack) {
         int i = x + this.getTabX(index);
         int j = y + this.getTabY(index);
         switch (this) {
@@ -69,7 +68,7 @@ enum SkillTreeTabType {
             }
         }
 
-        itemRenderer.renderInGui(icon, i, j);
+        context.drawItemWithoutEntity(stack, i, j);
     }
 
     public int getTabX(int index) {
@@ -92,5 +91,26 @@ enum SkillTreeTabType {
         int i = screenX + this.getTabX(index);
         int j = screenY + this.getTabY(index);
         return mouseX > (double)i && mouseX < (double)(i + this.width) && mouseY > (double)j && mouseY < (double)(j + this.height);
+    }
+
+    @Environment(EnvType.CLIENT)
+    private static record Textures(Identifier first, Identifier middle, Identifier last) {
+        Textures(Identifier first, Identifier middle, Identifier last) {
+            this.first = first;
+            this.middle = middle;
+            this.last = last;
+        }
+
+        public Identifier first() {
+            return this.first;
+        }
+
+        public Identifier middle() {
+            return this.middle;
+        }
+
+        public Identifier last() {
+            return this.last;
+        }
     }
 }
